@@ -38,7 +38,7 @@ __device__ uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
 
 __device__ uint64_t state[8];
 
-__device__ __host__ int difficulty = 0;
+__device__ int difficulty = 0;
 
 __device__ static const uint64_t K[80] = 
 {
@@ -213,8 +213,9 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 }
 
 __global__
-void padding(char *message, int size)
+void padding(char *message, int size, int *h_difficulty)
 {
+	difficulty = *h_difficulty;
 	int padSize = (((int)(size / 1024) * 1024) + 1024)/8;
 	
 	unsigned char *paddedArray;
@@ -256,19 +257,23 @@ int main(void)
 {
 	int array_len = 10000;
 	int string_len = 30;
+	int h_difficulty;
 
 	printf("Please enter difficulty: \n");
-	scanf("%d", &difficulty);
+	scanf("%d", &h_difficulty);
 
 	while(1)
 	{
 		unsigned char* h_array;
 		unsigned char* h_sub_array;
+		int *h_difficulty_ptr;
 
 		cudaMallocManaged(&h_array, (array_len*string_len*sizeof(unsigned char)));
 		cudaMallocManaged(&h_sub_array, (string_len*sizeof(unsigned char)));
+		cudaMallocManaged(&h_difficulty_ptr, sizeof(int));
 		
 		h_array = generateArray(array_len, string_len);
+		h_difficulty_ptr = &h_difficulty;
 
 		for(int i=0;i<array_len;i++)
 		{	
@@ -277,7 +282,7 @@ int main(void)
 				h_sub_array[j] = h_array[i*string_len+j];	
 			}
 			
-			padding<<<1,1>>>(h_sub_array, string_len);
+			padding<<<1,1>>>(h_sub_array, string_len, h_difficulty_ptr);
 		}
 	}
 	return 0;
