@@ -251,9 +251,9 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 		paddedArray[i+(padSize-16)] = length[i];
 	
 	for(int i=0;i<128;i++)
-		printf("%.2x", paddedArray[i])
+		printf("%.2x", paddedArray[i]);
 	printf("\n");
-	
+
 	computeHash((unsigned char*)paddedArray, padSize, (unsigned char*)message);
 	free(paddedArray);
 	free(message);
