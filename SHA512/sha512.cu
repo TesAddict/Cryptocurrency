@@ -34,10 +34,6 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
     h = temp1 + temp2;                       \
   }
 
-__device__ uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
-
-__device__ uint64_t state[8];
-
 __device__ int difficulty = 0;
 
 __device__ static const uint64_t K[80] = 
@@ -101,6 +97,8 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 {
 	uint64_t s0, s1;
 	uint64_t w[80];
+	uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
+	uint64_t state[8];
 
 
 	for(int i=0;i<16;i++)
