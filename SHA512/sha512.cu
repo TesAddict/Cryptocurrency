@@ -249,7 +249,6 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	for(int i=0;i<16;i++)
 		paddedArray[i+(padSize-16)] = length[i];
 	
-	
 	computeHash((unsigned char*)paddedArray, padSize, (unsigned char*)message);
 	free(paddedArray);
 	free(message);
@@ -280,7 +279,7 @@ int main(void)
 		}
 		h_difficulty_ptr = &h_difficulty;
 	
-		padding<<<1,256>>>(h_array, string_len, h_difficulty_ptr);
+		padding<<<1,10>>>(h_array, string_len, h_difficulty_ptr);
 
 		cudaDeviceSynchronize();
 
