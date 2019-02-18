@@ -180,10 +180,7 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 	    sha512_output[(i*8)+6]  = state[i] >>  8;
 	    sha512_output[(i*8)+7]  = state[i];
 	}
-
 	verifyLeadingZeroes(sha512_output, difficulty, message);
-
-
 }
 
 __device__
@@ -249,7 +246,7 @@ void padding(char *message, int size, int *h_difficulty)
 	for(int i=0;i<16;i++)
 		paddedArray[i+(padSize-16)] = length[i];
 	
-	computeHash(paddedArray, padSize, message);
+	computeHash((unsigned char*)paddedArray, padSize, (unsigned char*)message);
 
 }
 
