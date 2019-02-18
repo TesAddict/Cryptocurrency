@@ -38,7 +38,7 @@ __device__ uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
 
 __device__ uint64_t state[8];
 
-int difficulty = 0;
+__device__ __host__ int difficulty = 0;
 
 __device__ static const uint64_t K[80] = 
 {
