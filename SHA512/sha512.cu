@@ -34,7 +34,7 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero);
     h = temp1 + temp2;                       \
   }
 
-__device__ int difficulty = 0;
+//__device__ int difficulty = 0;
 
 __device__ static const uint64_t K[80] = 
 {
@@ -213,7 +213,7 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero)
 __global__
 void padding(unsigned char *message, int size, int *h_difficulty)
 {
-	difficulty = 10;
+	int difficulty = 10;
 	int thread_index = blockIdx.x*blockDim.x + threadIdx.x;
 	printf("Thread Index: %d\n", thread_index);
 
@@ -284,6 +284,6 @@ int main(void)
 		cudaFree(h_array);
 		cudaFree(h_difficulty_ptr);
 		free(temp_array);
-		//break;
+		break;
 	}
 }
