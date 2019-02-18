@@ -275,12 +275,17 @@ int main(void)
 	while(1)
 	{
 		unsigned char* h_array;
+		unsigned char* temp_array = malloc(array_len*string_len*sizeof(unsigned char));
 		int *h_difficulty_ptr;
 
 		cudaMallocManaged(&h_array, (array_len*string_len*sizeof(unsigned char)));
 		cudaMallocManaged(&h_difficulty_ptr, sizeof(int));
 		
-		h_array = generateArray(array_len, string_len);
+		temp_array = generateArray(array_len, string_len);
+		for(int i=0; i<array_len*string_len;i++)
+		{
+			h_array[i] = temp_array[i];
+		}
 		h_difficulty_ptr = &h_difficulty;
 		
 		for(int i=0;i<string_len;i++)
