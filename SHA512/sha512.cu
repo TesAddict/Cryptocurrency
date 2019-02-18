@@ -34,13 +34,13 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
     h = temp1 + temp2;                       \
   }
 
-uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
+__device__ uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
 
-uint64_t state[8];
+__device__ uint64_t state[8];
 
 int difficulty = 0;
 
-static const uint64_t K[80] = 
+__device__ static const uint64_t K[80] = 
 {
     UL64(0x428A2F98D728AE22), UL64(0x7137449123EF65CD),
     UL64(0xB5C0FBCFEC4D3B2F), UL64(0xE9B5DBA58189DBBC),
@@ -84,7 +84,7 @@ static const uint64_t K[80] =
     UL64(0x5FCB6FAB3AD6FAEC), UL64(0x6C44198C4A475817)
 };
 
-static const uint64_t H_array[8] = 
+__device__ static const uint64_t H_array[8] = 
 {
    	UL64(0x6A09E667F3BCC908),
 	UL64(0xBB67AE8584CAA73B),
@@ -96,6 +96,7 @@ static const uint64_t H_array[8] =
 	UL64(0x5BE0CD19137E2179)
 };
 
+__device__
 void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 {
 	uint64_t s0, s1;
@@ -165,7 +166,9 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
   	state[6] += G;
   	state[7] += H;
 
-  	unsigned char *sha512_output = malloc(128 * sizeof(unsigned char));
+  	unsigned char *sha512_output;
+  	cudaMalloc(&sha512_output, 128 * sizeof(unsigned char));
+  	
   	for(int i=0;i<8;i++)
   	{
 	  	sha512_output[(i*8)]    = state[i] >> 56;
@@ -180,9 +183,10 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 
 	verifyLeadingZeroes(sha512_output, difficulty, message);
 
-	memset(sha512_output,0,128*sizeof(unsigned char));
+
 }
 
+__device__
 void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *message)
 {
 	for(int i=0;i<64;i++)
@@ -208,12 +212,16 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 	}
 }
 
+__global__
 void padding(char *message, int size)
 {
 	int padSize = (((int)(size / 1024) * 1024) + 1024)/8;
 	
-	unsigned char *paddedArray = malloc(padSize*sizeof(unsigned char));
-	unsigned char *length = malloc(32*sizeof(unsigned char));
+	unsigned char *paddedArray;
+	unsigned char *length;
+
+	cudaMalloc(&paddedArray, padSize*sizeof(unsigned char));
+	cudaMalloc(&length, 32*sizeof(unsigned char));
 
 	for(int i=0;i<size;i++)
 		paddedArray[i]=message[i];
@@ -242,8 +250,6 @@ void padding(char *message, int size)
 	
 	computeHash(paddedArray, padSize, message);
 
-	memset(paddedArray,0,padSize*sizeof(unsigned char));
-	memset(length,0,32*sizeof(unsigned char));
 }
 
 int main(void)
@@ -256,18 +262,22 @@ int main(void)
 
 	while(1)
 	{
-		unsigned char* array = malloc(array_len*string_len*sizeof(unsigned char));
-		unsigned char* sub_array = malloc(string_len*sizeof(unsigned char));
+		unsigned char* h_array;
+		unsigned char* h_sub_array;
+
+		cudaMallocManaged(&h_array, (array_len*string_len*sizeof(unsigned char)));
+		cudaMallocManaged(&h_sub_array, (string_len*sizeof(unsigned char)));
 		
-		array = generateArray(array_len, string_len);
+		h_array = generateArray(array_len, string_len);
 
 		for(int i=0;i<array_len;i++)
 		{	
 			for(int j=0;j<string_len;j++)
 			{
-				sub_array[j] = array[i*string_len+j];	
+				h_sub_array[j] = h_array[i*string_len+j];	
 			}
-			padding(sub_array, string_len);
+			
+			padding<<<1,1>>>(h_sub_array, string_len);
 		}
 	}
 	return 0;
