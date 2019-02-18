@@ -183,6 +183,7 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 	//	printf("%.2x", sha512_output[k]);
 	//printf("\n\n");
 	verifyLeadingZeroes(sha512_output, difficulty, message);
+	free(sha512_output);
 }
 
 __device__
@@ -247,6 +248,8 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 		paddedArray[i+(padSize-16)] = length[i];
 	
 	computeHash((unsigned char*)paddedArray, padSize, (unsigned char*)message);
+	free(paddedArray);
+	free(message);
 
 }
 
@@ -281,6 +284,9 @@ int main(void)
 			
 			padding<<<1,1>>>(h_sub_array, string_len, h_difficulty_ptr);
 		}
+		cudaFree();
+		cudaFree();
+		cudaFree();
 	}
 	return 0;
 }
