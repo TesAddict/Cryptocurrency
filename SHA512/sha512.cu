@@ -277,7 +277,6 @@ int main(void)
 		padding<<<1,1>>>(h_array, string_len, h_difficulty_ptr);
 		}
 		cudaFree(h_array);
-		cudaFree(h_sub_array);
 		cudaFree(h_difficulty_ptr);
 	}
 	return 0;
