@@ -280,7 +280,9 @@ int main(void)
 		}
 		h_difficulty_ptr = &h_difficulty;
 	
-		padding<<<1,2>>>(h_array, string_len, h_difficulty_ptr);
+		padding<<<1,256>>>(h_array, string_len, h_difficulty_ptr);
+
+		cudaDeviceSynchronize();
 
 		cudaFree(h_array);
 		cudaFree(h_difficulty_ptr);
