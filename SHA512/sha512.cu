@@ -216,14 +216,15 @@ __global__
 void padding(unsigned char *message, int size, int *h_difficulty)
 {
 	difficulty = 10;
+	int thread_index = blockIdx.x*blockDim.x + threadIdx.x;
 	int padSize = (((int)(size / 1024) * 1024) + 1024)/8;
 	
 	unsigned char *paddedArray = (unsigned char*)malloc(padSize*sizeof(unsigned char));
 	unsigned char *length = (unsigned char*)malloc(32*sizeof(unsigned char));
 
 
-	for(int i=0;i<size;i++)
-		paddedArray[i]=message[i];
+	for(int i=(thread_index*size);i<size;i++)
+		paddedArray[i-(thread_index*size)]=message[i];
 	
 	paddedArray[size] = 0x80;
 
@@ -265,24 +266,15 @@ int main(void)
 	while(1)
 	{
 		unsigned char* h_array;
-		unsigned char* h_sub_array;
 		int *h_difficulty_ptr;
 
 		cudaMallocManaged(&h_array, (array_len*string_len*sizeof(unsigned char)));
-		cudaMallocManaged(&h_sub_array, (string_len*sizeof(unsigned char)));
 		cudaMallocManaged(&h_difficulty_ptr, sizeof(int));
 		
 		h_array = generateArray(array_len, string_len);
 		h_difficulty_ptr = &h_difficulty;
-
-		for(int i=0;i<array_len;i++)
-		{	
-			for(int j=0;j<string_len;j++)
-			{
-				h_sub_array[j] = h_array[i*string_len+j];	
-			}
 			
-			padding<<<1,1>>>(h_sub_array, string_len, h_difficulty_ptr);
+		padding<<<1,1>>>(h_array, string_len, h_difficulty_ptr);
 		}
 		cudaFree(h_array);
 		cudaFree(h_sub_array);
