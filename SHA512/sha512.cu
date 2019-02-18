@@ -166,8 +166,7 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
   	state[6] += G;
   	state[7] += H;
 
-  	unsigned char *sha512_output;
-  	cudaMalloc(&sha512_output, 128 * sizeof(unsigned char));
+  	unsigned char *sha512_output = (unsigned char*)malloc(128*sizeof(unsigned char));
   	
   	for(int i=0;i<8;i++)
   	{
@@ -215,11 +214,9 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	difficulty = *h_difficulty;
 	int padSize = (((int)(size / 1024) * 1024) + 1024)/8;
 	
-	unsigned char *paddedArray;
-	unsigned char *length;
+	unsigned char *paddedArray = (unsigned char*)malloc(padSize*sizeof(unsigned char));
+	unsigned char *length = (unsigned char*)malloc(32*sizeof(unsigned char));
 
-	cudaMalloc(&paddedArray, padSize*sizeof(unsigned char));
-	cudaMalloc(&length, 32*sizeof(unsigned char));
 
 	for(int i=0;i<size;i++)
 		paddedArray[i]=message[i];
