@@ -179,6 +179,9 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 	    sha512_output[(i*8)+6]  = state[i] >>  8;
 	    sha512_output[(i*8)+7]  = state[i];
 	}
+	for(int k=0;k<64;k++)
+		printf("%.2x", sha512_output[k]);
+	printf("\n\n");
 	verifyLeadingZeroes(sha512_output, difficulty, message);
 }
 
@@ -211,7 +214,7 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 __global__
 void padding(unsigned char *message, int size, int *h_difficulty)
 {
-	difficulty = *h_difficulty;
+	difficulty = 10;
 	int padSize = (((int)(size / 1024) * 1024) + 1024)/8;
 	
 	unsigned char *paddedArray = (unsigned char*)malloc(padSize*sizeof(unsigned char));
