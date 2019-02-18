@@ -1,0 +1,16 @@
+18:36:52 **** Incremental Build of configuration Debug for project CUDA_Learning ****
+make all 
+Building file: ../hello-world.cu
+Invoking: NVCC Compiler
+/usr/local/cuda-10.0/bin/nvcc -G -g -O0 -gencode arch=compute_75,code=sm_75  -odir "." -M -o "hello-world.d" "../hello-world.cu"
+/usr/local/cuda-10.0/bin/nvcc -G -g -O0 --compile --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75  -x cu -o  "hello-world.o" "../hello-world.cu"
+Finished building: ../hello-world.cu
+ 
+Building target: CUDA_Learning
+Invoking: NVCC Linker
+/usr/local/cuda-10.0/bin/nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75 -link -o  "CUDA_Learning"  ./hello-world.o   
+Finished building target: CUDA_Learning
+ 
+
+18:36:53 Build Finished (took 813ms)
+
