@@ -218,7 +218,7 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	difficulty = 10;
 	int thread_index = blockIdx.x*blockDim.x + threadIdx.x;
 	printf("Thread Index: %d\n", thread_index);
-	
+
 	int padSize = (((int)(size / 1024) * 1024) + 1024)/8;
 	
 	unsigned char *paddedArray = (unsigned char*)malloc(padSize*sizeof(unsigned char));
@@ -249,6 +249,10 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	
 	for(int i=0;i<16;i++)
 		paddedArray[i+(padSize-16)] = length[i];
+	
+	for(int i=0;i<128;i++)
+		printf("%.2x", paddedArray[i])
+	printf("\n");
 	
 	computeHash((unsigned char*)paddedArray, padSize, (unsigned char*)message);
 	free(paddedArray);
