@@ -285,11 +285,13 @@ int main(void)
 		
 		for(int i=0;i<string_len;i++)
 			printf("%c", h_array[i]);
+		printf("\n");
 
 		padding<<<1,1>>>(h_array, string_len, h_difficulty_ptr);
 
 		cudaFree(h_array);
 		cudaFree(h_difficulty_ptr);
+		break;
 	}
 	return 0;
 }
