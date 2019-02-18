@@ -249,11 +249,9 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	for(int i=0;i<16;i++)
 		paddedArray[i+(padSize-16)] = length[i];
 	
-
+	free(message);
 	computeHash((unsigned char*)paddedArray, padSize, (unsigned char*)message);
 	free(paddedArray);
-	free(message);
-
 }
 
 int main(void)
