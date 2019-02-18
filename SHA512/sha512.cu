@@ -180,6 +180,7 @@ void computeHash(unsigned char *paddedArray, int size)
 	for(int k=0;k<64;k++)
 		printf("%.2x", sha512_output[k]);
 	printf("\n\n");
+	int difficulty = 10;
 	verifyLeadingZeroes(sha512_output, difficulty);
 	free(sha512_output);
 }
