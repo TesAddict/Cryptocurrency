@@ -225,7 +225,8 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	unsigned char *length = (unsigned char*)malloc(32*sizeof(unsigned char));
 
 	for(int i=0;i<size;i++)
-		printf(message[i]);
+		printf("%.2x",message[i]);
+	printf("\n");
 
 	for(int i=(thread_index*size);i<size;i++)
 		paddedArray[i-(thread_index*size)]=message[i];
