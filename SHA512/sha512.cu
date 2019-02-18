@@ -224,10 +224,6 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	unsigned char *paddedArray = (unsigned char*)malloc(padSize*sizeof(unsigned char));
 	unsigned char *length = (unsigned char*)malloc(32*sizeof(unsigned char));
 
-	for(int i=0;i<size;i++)
-		printf("%.2x",message[i]);
-	printf("\n");
-
 	for(int i=(thread_index*size);i<size;i++)
 		paddedArray[i-(thread_index*size)]=message[i];
 	
@@ -253,9 +249,6 @@ void padding(unsigned char *message, int size, int *h_difficulty)
 	for(int i=0;i<16;i++)
 		paddedArray[i+(padSize-16)] = length[i];
 	
-	for(int i=0;i<128;i++)
-		printf("%.2x", paddedArray[i]);
-	printf("\n");
 
 	computeHash((unsigned char*)paddedArray, padSize, (unsigned char*)message);
 	free(paddedArray);
@@ -292,6 +285,7 @@ int main(void)
 
 		cudaFree(h_array);
 		cudaFree(h_difficulty_ptr);
+		free(temp_array);
 	}
 	return 0;
 }
