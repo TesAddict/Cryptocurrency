@@ -275,7 +275,7 @@ int main(void)
 	while(1)
 	{
 		unsigned char* h_array;
-		unsigned char* temp_array = malloc(array_len*string_len*sizeof(unsigned char));
+		unsigned char* temp_array = (unsigned char*)malloc(array_len*string_len*sizeof(unsigned char));
 		int *h_difficulty_ptr;
 
 		cudaMallocManaged(&h_array, (array_len*string_len*sizeof(unsigned char)));
