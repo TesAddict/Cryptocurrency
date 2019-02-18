@@ -282,7 +282,10 @@ int main(void)
 		
 		h_array = generateArray(array_len, string_len);
 		h_difficulty_ptr = &h_difficulty;
-			
+		
+		for(int i=0;i<string_len;i++)
+			printf("%c", h_array[i]);
+
 		padding<<<1,1>>>(h_array, string_len, h_difficulty_ptr);
 
 		cudaFree(h_array);
