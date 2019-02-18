@@ -10,7 +10,7 @@ Date: 02.17.2019
 #include <string.h>
 #include "sha512_init.c"
 
-void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *message);
+void verifyLeadingZeroes(unsigned char *hash, int leading_zero);
 
 #define UL64(x) x##ULL
 
@@ -93,7 +93,7 @@ __device__ static const uint64_t H_array[8] =
 };
 
 __device__
-void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
+void computeHash(unsigned char *paddedArray, int size)
 {
 	uint64_t s0, s1;
 	uint64_t w[80];
@@ -185,7 +185,7 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 }
 
 __device__
-void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *message)
+void verifyLeadingZeroes(unsigned char *hash, int leading_zero)
 {
 	for(int i=0;i<64;i++)
 	{
