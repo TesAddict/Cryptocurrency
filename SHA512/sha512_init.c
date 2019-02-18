@@ -5,8 +5,8 @@ unsigned char* generateString(unsigned char *dest, int length);
 
 unsigned char* generateArray(int array_length, int string_length)
 {
-	unsigned char *value_ptr = malloc(string_length*sizeof(unsigned char));
-	unsigned char *array_ptr = malloc(string_length*array_length*sizeof(unsigned char));
+	unsigned char *value_ptr = (unsigned char*)malloc(string_length*sizeof(unsigned char));
+	unsigned char *array_ptr = (unsigned char*)malloc(string_length*array_length*sizeof(unsigned char));
 	
 	for (int i=0;i<array_length;i++)
 	{

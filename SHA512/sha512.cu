@@ -210,7 +210,7 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 }
 
 __global__
-void padding(char *message, int size, int *h_difficulty)
+void padding(unsigned char *message, int size, int *h_difficulty)
 {
 	difficulty = *h_difficulty;
 	int padSize = (((int)(size / 1024) * 1024) + 1024)/8;
