@@ -284,6 +284,7 @@ int main(void)
 		cudaFree(h_array);
 		cudaFree(h_difficulty_ptr);
 		free(temp_array);
+		break;
 	}
 	return 0;
 }
