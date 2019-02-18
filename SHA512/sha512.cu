@@ -179,9 +179,9 @@ void computeHash(unsigned char *paddedArray, int size, unsigned char *message)
 	    sha512_output[(i*8)+6]  = state[i] >>  8;
 	    sha512_output[(i*8)+7]  = state[i];
 	}
-	for(int k=0;k<64;k++)
-		printf("%.2x", sha512_output[k]);
-	printf("\n\n");
+	//for(int k=0;k<64;k++)
+	//	printf("%.2x", sha512_output[k]);
+	//printf("\n\n");
 	verifyLeadingZeroes(sha512_output, difficulty, message);
 }
 
