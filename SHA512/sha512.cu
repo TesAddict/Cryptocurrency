@@ -286,11 +286,11 @@ int main(void)
 		{
 			if (hashed_winner[i] == true)
 			{
-			//	counter++;
+				counter++;
 				//printf("%d\n", counter);
-				for(int j=0;j<64;j++)
-					printf("%.2x", hashed_array[i*64+j]);
-				printf("\n");
+				//for(int j=0;j<64;j++)
+				//	printf("%.2x", hashed_array[i*64+j]);
+				//printf("\n");
 			}
 		}
 		
@@ -299,11 +299,13 @@ int main(void)
 		cudaFree(hashed_array);
 		cudaFree(padded_array);
 		cudaFree(hashed_winner);
-		//break;
+		
+		if (counter == 5000)
+			break;
 	}
 	t = clock() - t;
 	double time_taken = t/CLOCKS_PER_SEC;
-	//printf("%d hashes in %f seconds.\n", counter, time_taken);
+	printf("%d hashes in %f seconds.\n", counter, time_taken);
 	cudaDeviceReset();
 	return 0;
 }

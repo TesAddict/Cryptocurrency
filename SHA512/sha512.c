@@ -276,9 +276,9 @@ int main(void)
 			}
 			padding(sub_array, string_len);
 		}
-		if (counter == 10000)
+		if (counter == 5000)
 		{
-				printf("%d\n", counter);
+				//printf("%d\n", counter);
 				break;
 		}
 	}

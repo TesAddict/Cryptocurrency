@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Rename resource &apos;CUDA_Learning/hello-world&apos; to &apos;hello-world.cu&apos;" description="Rename resource &apos;hello-world&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="hello-world" name="hello-world.cu" stamp="1550359660431" updateReferences="true"/>
-</session>
