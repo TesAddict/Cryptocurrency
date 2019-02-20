@@ -1,6 +1,5 @@
 /*
 Author: Eleftherios Amperiadis
-Date: 02.17.2019
 */
 
 #include <stdio.h>

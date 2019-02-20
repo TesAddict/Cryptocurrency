@@ -1,42 +1,40 @@
-18:27:51 **** Build of configuration Debug for project CUDA_Learning ****
-make all 
-Building file: ../hello-world.cu
-Invoking: NVCC Compiler
-/usr/local/cuda-10.0/bin/nvcc -G -g -O0 -gencode arch=compute_75,code=sm_75  -odir "." -M -o "hello-world.d" "../hello-world.cu"
-/usr/local/cuda-10.0/bin/nvcc -G -g -O0 --compile --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75  -x cu -o  "hello-world.o" "../hello-world.cu"
-Finished building: ../hello-world.cu
- 
-Building target: CUDA_Learning
-Invoking: NVCC Linker
-/usr/local/cuda-10.0/bin/nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75 -link -o  "CUDA_Learning"  ./hello-world.o   
-Finished building target: CUDA_Learning
- 
-18:27:53 **** Incremental Build of configuration Debug for project CUDA_Learning ****
+11:52:10 **** Incremental Build of configuration Debug for project SHA512_Test ****
 make all 
 make: Nothing to be done for 'all'.
-18:29:59 **** Incremental Build of configuration Debug for project CUDA_Learning ****
+11:52:27 **** Incremental Build of configuration Debug for project SHA512_Test ****
 make all 
-Building file: ../hello-world.cu
-Invoking: NVCC Compiler
-/usr/local/cuda-10.0/bin/nvcc -G -g -O0 -gencode arch=compute_75,code=sm_75  -odir "." -M -o "hello-world.d" "../hello-world.cu"
-/usr/local/cuda-10.0/bin/nvcc -G -g -O0 --compile --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75  -x cu -o  "hello-world.o" "../hello-world.cu"
-Finished building: ../hello-world.cu
- 
-Building target: CUDA_Learning
-Invoking: NVCC Linker
-/usr/local/cuda-10.0/bin/nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75 -link -o  "CUDA_Learning"  ./hello-world.o   
-Finished building target: CUDA_Learning
- 
-18:36:52 **** Incremental Build of configuration Debug for project CUDA_Learning ****
+make: Nothing to be done for 'all'.
+11:52:38 **** Incremental Build of configuration Debug for project SHA512_Test ****
 make all 
-Building file: ../hello-world.cu
+make: Nothing to be done for 'all'.
+11:53:31 **** Incremental Build of configuration Debug for project SHA512_Test ****
+make all 
+Building file: ../sha512_backup.cu
 Invoking: NVCC Compiler
-/usr/local/cuda-10.0/bin/nvcc -G -g -O0 -gencode arch=compute_75,code=sm_75  -odir "." -M -o "hello-world.d" "../hello-world.cu"
-/usr/local/cuda-10.0/bin/nvcc -G -g -O0 --compile --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75  -x cu -o  "hello-world.o" "../hello-world.cu"
-Finished building: ../hello-world.cu
+/usr/local/cuda-10.0/bin/nvcc -G -g -O0 -gencode arch=compute_75,code=sm_75  -odir "." -M -o "sha512_backup.d" "../sha512_backup.cu"
+/usr/local/cuda-10.0/bin/nvcc -G -g -O0 --compile --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75  -x cu -o  "sha512_backup.o" "../sha512_backup.cu"
+../sha512_backup.cu(189): warning: a __host__ function("verifyLeadingZeroes") redeclared with __device__, hence treated as a __host__ __device__ function
+
+../sha512_backup.cu(255): warning: variable "counter" was declared but never referenced
+
+../sha512_backup.cu(305): warning: variable "time_taken" was declared but never referenced
+
+Finished building: ../sha512_backup.cu
  
-Building target: CUDA_Learning
+Building target: SHA512_Test
 Invoking: NVCC Linker
-/usr/local/cuda-10.0/bin/nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75 -link -o  "CUDA_Learning"  ./hello-world.o   
-Finished building target: CUDA_Learning
+/usr/local/cuda-10.0/bin/nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_75,code=compute_75 -gencode arch=compute_75,code=sm_75 -link -o  "SHA512_Test"  ./sha512_backup.o ./sha512_init.o   
+Finished building target: SHA512_Test
  
+11:53:37 **** Incremental Build of configuration Debug for project SHA512_Test ****
+make all 
+make: Nothing to be done for 'all'.
+11:54:26 **** Incremental Build of configuration Debug for project SHA512_Test ****
+make all 
+make: Nothing to be done for 'all'.
+11:54:47 **** Incremental Build of configuration Debug for project SHA512_Test ****
+make all 
+make: Nothing to be done for 'all'.
+11:55:35 **** Incremental Build of configuration Debug for project SHA512_Test ****
+make all 
+make: Nothing to be done for 'all'.
