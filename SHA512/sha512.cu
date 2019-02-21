@@ -11,7 +11,7 @@ Author: Eleftherios Amperiadis
 #include <time.h>
 #include "sha512_init.c"
 
-void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset, bool* hashed_winner,
+__device__ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset, bool* hashed_winner,
 	int idx);
 
 #define UL64(x) x##ULL
@@ -214,7 +214,6 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 	unsigned char *padded_array, bool* hashed_winner)
 {
 	int idx = blockIdx.x*blockDim.x + threadIdx.x;
-	//printf("X: %d\n", idx);
 
 	int thread_offset = idx*128;
 	int message_offset = idx*size;
@@ -250,15 +249,15 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 int main(void)
 {
 	int array_len = 1024;
-	int cuda_blocks = 1;
-	int string_len = 10;
+	int cuda_blocks = 64;
+	int string_len = 30;
 	int counter = 0;
 
 	clock_t t;
 	t = clock();
 	while(1)
 	{
-		unsigned char* temp_array = (unsigned char*)malloc(array_len*string_len*sizeof(unsigned char));
+		unsigned char* temp_array = (unsigned char*)malloc(cuda_blocks*array_len*string_len*sizeof(unsigned char));
 
 		unsigned char* message_array;
 		unsigned char* hashed_array;
@@ -271,7 +270,7 @@ int main(void)
 		cudaMallocManaged(&hashed_winner, (array_len*cuda_blocks*sizeof(bool)));
 	
 		temp_array = generateArray(array_len*cuda_blocks, string_len);
-		for(int i=0; i<array_len*string_len;i++)
+		for(int i=0; i<array_len*string_len*cuda_blocks;i++)
 		{
 			message_array[i] = temp_array[i];
 		}
@@ -288,6 +287,8 @@ int main(void)
 			{
 				counter++;
 				//printf("%d\n", counter);
+				if (counter == 10000)
+					break;
 				//for(int j=0;j<64;j++)
 				//	printf("%.2x", hashed_array[i*64+j]);
 				//printf("\n");
@@ -300,8 +301,10 @@ int main(void)
 		cudaFree(padded_array);
 		cudaFree(hashed_winner);
 		
-		if (counter == 5000)
+		if (counter == 10000)
 			break;
+
+		
 	}
 	t = clock() - t;
 	double time_taken = t/CLOCKS_PER_SEC;

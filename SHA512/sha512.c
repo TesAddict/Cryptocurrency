@@ -193,9 +193,9 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 		{
 			if(leading_zero == 0)
 			{
-				//for(int k=0;k<64;k++)
-				//	printf("%.2x", hash[k]);
-				//printf("\n\n");
+				for(int k=0;k<64;k++)
+					printf("%.2x", hash[k]);
+				printf("\n");
 				counter++;
 				i = 64;
 				break;
