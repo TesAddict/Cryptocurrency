@@ -9,6 +9,7 @@ Date: 02.17.2019
 #include <stddef.h>
 #include <string.h>
 #include "sha512_init.c"
+#include <time.h>
 
 void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *message);
 
@@ -39,6 +40,7 @@ uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
 uint64_t state[8];
 
 int difficulty = 0;
+int counter = 0;
 
 static const uint64_t K[80] = 
 {
@@ -193,7 +195,8 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 			{
 				for(int k=0;k<64;k++)
 					printf("%.2x", hash[k]);
-				printf("\n\n");
+				printf("\n");
+				counter++;
 				i = 64;
 				break;
 			}
@@ -248,12 +251,16 @@ void padding(char *message, int size)
 
 int main(void)
 {
-	int array_len = 10000;
+	int array_len = 1000;
 	int string_len = 30;
+	clock_t t;
+
+	
 
 	printf("Please enter difficulty: \n");
 	scanf("%d", &difficulty);
 
+	t = clock();
 	while(1)
 	{
 		unsigned char* array = malloc(array_len*string_len*sizeof(unsigned char));
@@ -269,6 +276,14 @@ int main(void)
 			}
 			padding(sub_array, string_len);
 		}
+		if (counter == 5000)
+		{
+				//printf("%d\n", counter);
+				break;
+		}
 	}
+	t = clock() - t;
+	double time_taken = t/CLOCKS_PER_SEC;
+	printf("%d hashes in %f seconds \n", counter, time_taken);
 	return 0;
 }
