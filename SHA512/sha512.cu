@@ -249,7 +249,7 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 int main(void)
 {
 	int array_len = 1024;
-	int cuda_blocks = 64;
+	int cuda_blocks = 128;
 	int string_len = 30;
 	int counter = 0;
 
@@ -287,7 +287,7 @@ int main(void)
 			{
 				counter++;
 				//printf("%d\n", counter);
-				if (counter == 10000)
+				if (counter == 5000)
 					break;
 				//for(int j=0;j<64;j++)
 				//	printf("%.2x", hashed_array[i*64+j]);
@@ -301,7 +301,7 @@ int main(void)
 		cudaFree(padded_array);
 		cudaFree(hashed_winner);
 		
-		if (counter == 10000)
+		if (counter == 5000)
 			break;
 
 		
