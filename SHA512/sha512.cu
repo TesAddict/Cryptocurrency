@@ -9,7 +9,7 @@ Author: Eleftherios Amperiadis
 #include <string.h>
 #include <stdbool.h>
 #include <time.h>
-#include "sha512_init.c"
+#include <curand_kernel.h>
 
 __device__ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset, bool* hashed_winner,
 	int idx);
@@ -92,6 +92,10 @@ __device__ static const uint64_t H_array[8] =
 	UL64(0x1F83D9ABFB41BD6B),
 	UL64(0x5BE0CD19137E2179)
 };
+
+__device__ unsigned char charset[] = "0123456789"
+                     "abcdefghijklmnopqrstuvwxyz"
+                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 __device__
 void computeHash(unsigned char *padded_array, int size, unsigned char *hashed_array,
@@ -209,6 +213,23 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset,
 	}
 }
 
+
+// NEEDS WORK DUMMY ***
+__global__
+void generateArray(unsigned char* message_array, int string_len)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int upper_bound = idx * string_len;
+	curandState state;
+	curand_init(clock64(), idx, 0, &state);
+
+	for (int i = 0; i < string_len; i++)
+	{
+		double index = curand_uniform(&state) % 63;
+		message_array[upper_bound+i] = (unsigned char)charset[index];
+	}
+}
+
 __global__
 void padding(unsigned char *message, int size, unsigned char *hashed_array, 
 	unsigned char *padded_array, bool* hashed_winner)
@@ -257,8 +278,6 @@ int main(void)
 	t = clock();
 	while(1)
 	{
-		unsigned char* temp_array = (unsigned char*)malloc(cuda_blocks*array_len*string_len*sizeof(unsigned char));
-
 		unsigned char* message_array;
 		unsigned char* hashed_array;
 		unsigned char* padded_array;
@@ -269,18 +288,11 @@ int main(void)
 		cudaMallocManaged(&padded_array, (array_len*cuda_blocks*128*sizeof(unsigned char)));
 		cudaMallocManaged(&hashed_winner, (array_len*cuda_blocks*sizeof(bool)));
 	
-		temp_array = generateArray(array_len*cuda_blocks, string_len);
-		for(int i=0; i<array_len*string_len*cuda_blocks;i++)
-		{
-			message_array[i] = temp_array[i];
-		}
+		generateArray<<<cuda_blocks,array_len>>>(message_array, string_len);
 
-		free(temp_array);
-		
 		padding<<<cuda_blocks,array_len>>>(message_array, string_len, hashed_array, padded_array, hashed_winner);
 		cudaDeviceSynchronize();
 
-	
 		for(int i=0;i<array_len*cuda_blocks;i++)
 		{
 			if (hashed_winner[i] == true)
