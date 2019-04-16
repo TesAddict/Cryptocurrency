@@ -193,9 +193,9 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 		{
 			if(leading_zero == 0)
 			{
-				//for(int k=0;k<64;k++)
-				//	printf("%.2x", hash[k]);
-				//printf("\n");
+				for(int k=0;k<64;k++)
+					printf("%.2x", hash[k]);
+				printf("\n");
 				counter++;
 				i = 64;
 				break;
@@ -276,7 +276,7 @@ int main(void)
 			}
 			padding(sub_array, string_len);
 		}
-		if (counter == 5000)
+		if (counter == 10000)
 		{
 				//printf("%d\n", counter);
 				break;

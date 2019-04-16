@@ -184,7 +184,7 @@ void computeHash(unsigned char *padded_array, int size, unsigned char *hashed_ar
 	    hashed_array[thread_offset_sha512+(i*8)+7]  = state[i];
 	}
 
-	int difficulty = 10;
+	int difficulty = 25;
 	
 	verifyLeadingZeroes(hashed_array, difficulty, thread_offset_sha512, hashed_winner, idx);
 }
@@ -214,22 +214,6 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset,
 }
 
 
-// NEEDS WORK DUMMY ***
-__global__
-void generateArray(unsigned char* message_array, int string_len)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	int upper_bound = idx * string_len;
-	curandState state;
-	curand_init(clock64(), idx, 0, &state);
-
-	for (int i = 0; i < string_len; i++)
-	{
-		double index = curand_uniform(&state) % 63;
-		message_array[upper_bound+i] = (unsigned char)charset[index];
-	}
-}
-
 __global__
 void padding(unsigned char *message, int size, unsigned char *hashed_array, 
 	unsigned char *padded_array, bool* hashed_winner)
@@ -239,7 +223,21 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 	int thread_offset = idx*128;
 	int message_offset = idx*size;
 	int pad_offset = 112;
-	
+
+	/*
+	The below segment of code is responsible for generating random strings
+	for hashing using the curand library.
+
+	TODO: Add nonce appending functionality... 
+	*/
+	curandState state;
+	curand_init(clock64(), idx, 0, &state);
+
+	for (int i = 0; i < size; i++)
+	{
+		unsigned int rand = curand_uniform(&state)*100000;
+		message[message_offset+i] = (unsigned char)charset[(rand%63)];
+	}
 
 
 	for(int i=0;i<size;i++)
@@ -269,13 +267,15 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 
 int main(void)
 {
-	int array_len = 1024;
-	int cuda_blocks = 128;
+	int array_len = 512;
+	int cuda_blocks = 64;
 	int string_len = 30;
 	int counter = 0;
 
+	
 	clock_t t;
 	t = clock();
+
 	while(1)
 	{
 		unsigned char* message_array;
@@ -287,8 +287,6 @@ int main(void)
 		cudaMallocManaged(&hashed_array, (array_len*cuda_blocks*64*sizeof(unsigned char)));
 		cudaMallocManaged(&padded_array, (array_len*cuda_blocks*128*sizeof(unsigned char)));
 		cudaMallocManaged(&hashed_winner, (array_len*cuda_blocks*sizeof(bool)));
-	
-		generateArray<<<cuda_blocks,array_len>>>(message_array, string_len);
 
 		padding<<<cuda_blocks,array_len>>>(message_array, string_len, hashed_array, padded_array, hashed_winner);
 		cudaDeviceSynchronize();
@@ -298,12 +296,13 @@ int main(void)
 			if (hashed_winner[i] == true)
 			{
 				counter++;
-				//printf("%d\n", counter);
-				if (counter == 5000)
+
+				if (counter == 100000)
 					break;
-				//for(int j=0;j<64;j++)
-				//	printf("%.2x", hashed_array[i*64+j]);
-				//printf("\n");
+				
+				for(int j=0;j<64;j++)
+					printf("%.2x", hashed_array[i*64+j]);
+				printf("\n");
 			}
 		}
 		
@@ -312,15 +311,16 @@ int main(void)
 		cudaFree(hashed_array);
 		cudaFree(padded_array);
 		cudaFree(hashed_winner);
-		
-		if (counter == 5000)
-			break;
 
+		if (counter == 100000)
+			break;
 		
 	}
 	t = clock() - t;
 	double time_taken = t/CLOCKS_PER_SEC;
 	printf("%d hashes in %f seconds.\n", counter, time_taken);
+
+	
 	cudaDeviceReset();
 	return 0;
 }
