@@ -9,6 +9,7 @@ Author: Eleftherios Amperiadis
 #include <string.h>
 #include <stdbool.h>
 #include <time.h>
+#include <cstdlib>
 #include <curand_kernel.h>
 
 __device__ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset, bool* hashed_winner,
@@ -99,7 +100,7 @@ __device__ unsigned char charset[] = "0123456789"
 
 __device__
 void computeHash(unsigned char *padded_array, int size, unsigned char *hashed_array,
-	int idx, bool* hashed_winner)
+	int idx, bool* hashed_winner, int difficulty)
 {
 	uint64_t s0, s1;
 	uint64_t w[80];
@@ -184,7 +185,6 @@ void computeHash(unsigned char *padded_array, int size, unsigned char *hashed_ar
 	    hashed_array[thread_offset_sha512+(i*8)+7]  = state[i];
 	}
 
-	int difficulty = 25;
 	
 	verifyLeadingZeroes(hashed_array, difficulty, thread_offset_sha512, hashed_winner, idx);
 }
@@ -216,7 +216,7 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset,
 
 __global__
 void padding(unsigned char *message, int size, unsigned char *hashed_array, 
-	unsigned char *padded_array, bool* hashed_winner)
+	unsigned char *padded_array, bool* hashed_winner, uint32_t nonce, int difficulty)
 {
 	int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -224,12 +224,6 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 	int message_offset = idx*size;
 	int pad_offset = 112;
 
-	/*
-	The below segment of code is responsible for generating random strings
-	for hashing using the curand library.
-
-	TODO: Add nonce appending functionality... 
-	*/
 	curandState state;
 	curand_init(clock64(), idx, 0, &state);
 
@@ -238,6 +232,11 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 		unsigned int rand = curand_uniform(&state)*100000;
 		message[message_offset+i] = (unsigned char)charset[(rand%63)];
 	}
+
+	message[message_offset+30] = nonce>>24;
+	message[message_offset+31] = nonce>>16;
+	message[message_offset+32] = nonce>>8;
+	message[message_offset+33] = nonce;
 
 
 	for(int i=0;i<size;i++)
@@ -262,19 +261,17 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
     padded_array[pad_offset+thread_offset+14] =  val >>  8;
     padded_array[pad_offset+thread_offset+15] =  val >>  0;
 
-	computeHash((unsigned char*)padded_array, 128, (unsigned char*)hashed_array, idx, hashed_winner);
+	computeHash((unsigned char*)padded_array, 128, (unsigned char*)hashed_array, idx, hashed_winner, difficulty);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-	int array_len = 512;
+	int array_len = 256;
 	int cuda_blocks = 64;
 	int string_len = 30;
-	int counter = 0;
 
-	
-	clock_t t;
-	t = clock();
+	uint32_t nonce = 0xFFFFFFFF;
+	int difficulty = atoi(argv[1]); 
 
 	while(1)
 	{
@@ -283,44 +280,31 @@ int main(void)
 		unsigned char* padded_array;
 		bool* hashed_winner;
 
-		cudaMallocManaged(&message_array, (cuda_blocks*array_len*string_len*sizeof(unsigned char)));
+		cudaMallocManaged(&message_array, (cuda_blocks*array_len*(string_len+4)*sizeof(unsigned char)));
 		cudaMallocManaged(&hashed_array, (array_len*cuda_blocks*64*sizeof(unsigned char)));
 		cudaMallocManaged(&padded_array, (array_len*cuda_blocks*128*sizeof(unsigned char)));
 		cudaMallocManaged(&hashed_winner, (array_len*cuda_blocks*sizeof(bool)));
 
-		padding<<<cuda_blocks,array_len>>>(message_array, string_len, hashed_array, padded_array, hashed_winner);
+		padding<<<cuda_blocks,array_len>>>(message_array, string_len, hashed_array, padded_array, hashed_winner, nonce, difficulty);
 		cudaDeviceSynchronize();
 
 		for(int i=0;i<array_len*cuda_blocks;i++)
 		{
 			if (hashed_winner[i] == true)
-			{
-				counter++;
-
-				if (counter == 100000)
-					break;
-				
+			{	
 				for(int j=0;j<64;j++)
 					printf("%.2x", hashed_array[i*64+j]);
 				printf("\n");
 			}
 		}
 		
-
 		cudaFree(message_array);
 		cudaFree(hashed_array);
 		cudaFree(padded_array);
 		cudaFree(hashed_winner);
-
-		if (counter == 100000)
-			break;
 		
 	}
-	t = clock() - t;
-	double time_taken = t/CLOCKS_PER_SEC;
-	printf("%d hashes in %f seconds.\n", counter, time_taken);
 
-	
 	cudaDeviceReset();
 	return 0;
 }
