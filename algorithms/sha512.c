@@ -193,9 +193,6 @@ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, unsigned char *m
 		{
 			if(leading_zero == 0)
 			{
-				for(int k=0;k<64;k++)
-					printf("%.2x", hash[k]);
-				printf("\n");
 				counter++;
 				i = 64;
 				break;
@@ -249,18 +246,18 @@ void padding(char *message, int size)
 	memset(length,0,32*sizeof(unsigned char));
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	int array_len = 1000;
 	int string_len = 30;
-	clock_t t;
+	clock_t start, end;
 
 	
 
-	printf("Please enter difficulty: \n");
-	scanf("%d", &difficulty);
+	difficulty = atoi(argv[1]);
+	int end_counter = atoi(argv[2]);
 
-	t = clock();
+	start = clock();
 	while(1)
 	{
 		unsigned char* array = malloc(array_len*string_len*sizeof(unsigned char));
@@ -276,14 +273,15 @@ int main(void)
 			}
 			padding(sub_array, string_len);
 		}
-		if (counter == 10000)
+		if (counter >= end_counter)
 		{
 				//printf("%d\n", counter);
 				break;
 		}
 	}
-	t = clock() - t;
-	double time_taken = t/CLOCKS_PER_SEC;
-	printf("%d hashes in %f seconds \n", counter, time_taken);
+	end = clock();
+	double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	printf("%d solutions in %f seconds at %d difficulty.\n", counter,cpu_time_used,difficulty);
+	printf("%f MH/s\n", counter/cpu_time_used/1000000);
 	return 0;
 }
