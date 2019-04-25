@@ -50,45 +50,89 @@ static const uint32_t k[64] =
    	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-__device__
-void sha256Check(uint32_t *out, int dif, int out_stride, uint8_t *state, int idx)
+__global__
+void sha256Compute(uint32_t *valid_in, uint32_t *valid_out, uint32_t nonce, int dif, uint8_t *byte)
 {
-	if ((out[out_stride] >> (32-dif)) == 0)
-	{
-		state[idx] = 1;
-	}
-	else
-		state[idx] = 0;
-}
+	uint32_t w[64];
+	int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
-__device__
-void sha256Compute(uint32_t *input, uint32_t *out, int idx, int input_stride, int out_stride)
-{
-	uint32_t pad[16];
+	curandState state;
+	curand_init(clock64(), idx, 0, &state);
 
-	#pragma unroll 8
-	for (int i=0;i< 8;i++)
-		pad[i]  =  input[i+input_stride];
+	w[0] = curand(&state);
+	w[1] = curand(&state);
+	w[2] = curand(&state);
+	w[3] = curand(&state);
+	w[4] = curand(&state);
+	w[5] = curand(&state);
+	w[6] = curand(&state);
+	w[7] = nonce;	
 
-	pad[8] =  0x80000000;
+	w[8]  = 0x80000000;
 
-	#pragma unroll 6
-	for (int i=9;i<15;i++)
-		pad[i] =  0x00000000;
+	w[9]  = 0x00000000;
+	w[10] = 0x00000000;
+	w[11] = 0x00000000;
+	w[12] = 0x00000000;
+	w[13] = 0x00000000;
+	w[14] = 0x00000000;
 	
-	pad[15] =  0x00000100;
+	w[15] = 0x00000100;
 
-	uint32_t s[64];
+
 	uint32_t values[8];
+	
 
-	#pragma unroll 16
-	for(int i=0;i<16;i++)
-		s[i]  = pad[i];
-	
-	#pragma unroll 48
-	for(int i=16;i<64;i++)
-		s[i] = s[i-16]+(s0(s[i-15]))+s[i-7]+(s1(s[i-2]));  
-	
+	w[16] = w[0]+(s0(w[1]))+w[9]+(s1(w[14]));
+	w[17] = w[1]+(s0(w[2]))+w[10]+(s1(w[15]));
+	w[18] = w[2]+(s0(w[3]))+w[11]+(s1(w[16]));
+	w[19] = w[3]+(s0(w[4]))+w[12]+(s1(w[17]));
+	w[20] = w[4]+(s0(w[5]))+w[13]+(s1(w[18]));
+	w[21] = w[5]+(s0(w[6]))+w[14]+(s1(w[19]));
+	w[22] = w[6]+(s0(w[7]))+w[15]+(s1(w[20]));
+	w[23] = w[7]+(s0(w[8]))+w[16]+(s1(w[21]));
+	w[24] = w[8]+(s0(w[9]))+w[17]+(s1(w[22]));
+	w[25] = w[9]+(s0(w[10]))+w[18]+(s1(w[23]));
+	w[26] = w[10]+(s0(w[11]))+w[19]+(s1(w[24]));
+	w[27] = w[11]+(s0(w[12]))+w[20]+(s1(w[25]));
+	w[28] = w[12]+(s0(w[13]))+w[21]+(s1(w[26]));
+	w[29] = w[13]+(s0(w[14]))+w[22]+(s1(w[27]));
+	w[30] = w[14]+(s0(w[15]))+w[23]+(s1(w[28]));
+	w[31] = w[15]+(s0(w[16]))+w[24]+(s1(w[29]));
+	w[32] = w[16]+(s0(w[17]))+w[25]+(s1(w[30]));
+	w[33] = w[17]+(s0(w[18]))+w[26]+(s1(w[31]));
+	w[34] = w[18]+(s0(w[19]))+w[27]+(s1(w[32]));
+	w[35] = w[19]+(s0(w[20]))+w[28]+(s1(w[33]));
+	w[36] = w[20]+(s0(w[21]))+w[29]+(s1(w[34]));
+	w[37] = w[21]+(s0(w[22]))+w[30]+(s1(w[35]));
+	w[38] = w[22]+(s0(w[23]))+w[31]+(s1(w[36]));
+	w[39] = w[23]+(s0(w[24]))+w[32]+(s1(w[37]));
+	w[40] = w[24]+(s0(w[25]))+w[33]+(s1(w[38]));
+	w[41] = w[25]+(s0(w[26]))+w[34]+(s1(w[39]));
+	w[42] = w[26]+(s0(w[27]))+w[35]+(s1(w[40]));
+	w[43] = w[27]+(s0(w[28]))+w[36]+(s1(w[41]));
+	w[44] = w[28]+(s0(w[29]))+w[37]+(s1(w[42]));
+	w[45] = w[29]+(s0(w[30]))+w[38]+(s1(w[43]));
+	w[46] = w[30]+(s0(w[31]))+w[39]+(s1(w[44]));
+	w[47] = w[31]+(s0(w[32]))+w[40]+(s1(w[45]));
+	w[48] = w[32]+(s0(w[33]))+w[41]+(s1(w[46]));
+	w[49] = w[33]+(s0(w[34]))+w[42]+(s1(w[47]));
+	w[50] = w[34]+(s0(w[35]))+w[43]+(s1(w[48]));
+	w[51] = w[35]+(s0(w[36]))+w[44]+(s1(w[49]));
+	w[52] = w[36]+(s0(w[37]))+w[45]+(s1(w[50]));
+	w[53] = w[37]+(s0(w[38]))+w[46]+(s1(w[51]));
+	w[54] = w[38]+(s0(w[39]))+w[47]+(s1(w[52]));
+	w[55] = w[39]+(s0(w[40]))+w[48]+(s1(w[53]));
+	w[56] = w[40]+(s0(w[41]))+w[49]+(s1(w[54]));
+	w[57] = w[41]+(s0(w[42]))+w[50]+(s1(w[55]));
+	w[58] = w[42]+(s0(w[43]))+w[51]+(s1(w[56]));
+	w[59] = w[43]+(s0(w[44]))+w[52]+(s1(w[57]));
+	w[60] = w[44]+(s0(w[45]))+w[53]+(s1(w[58]));
+	w[61] = w[45]+(s0(w[46]))+w[54]+(s1(w[59]));
+	w[62] = w[46]+(s0(w[47]))+w[55]+(s1(w[60]));
+	w[63] = w[47]+(s0(w[48]))+w[56]+(s1(w[61]));
+
+
 	A = h[0];
 	B = h[1];
 	C = h[2];
@@ -104,7 +148,7 @@ void sha256Compute(uint32_t *input, uint32_t *out, int idx, int input_stride, in
 	#pragma unroll 64
 	for (int i=0;i<64;i++)
 	{
-		temp1 = H+(S1(E))+(ch(E,F,G))+k[i]+s[i];
+		temp1 = H+(S1(E))+(ch(E,F,G))+k[i]+w[i];
 		temp2 = (S0(A))+(maj(A,B,C));
 
 		H = G;
@@ -117,105 +161,84 @@ void sha256Compute(uint32_t *input, uint32_t *out, int idx, int input_stride, in
 		A = temp1+temp2;
 	}
 
-	out[0+out_stride] = h[0]+A;
-	out[1+out_stride] = h[1]+B;
-	out[2+out_stride] = h[2]+C;
-	out[3+out_stride] = h[3]+D;
-	out[4+out_stride] = h[4]+E;
-	out[5+out_stride] = h[5]+F;
-	out[6+out_stride] = h[6]+G;
-	out[7+out_stride] = h[7]+H;
-
-}
 
 
-__device__
-void generateStrings(uint32_t *input, int inlen, uint32_t nonce, int input_stride, int idx)
-{
-
-	// Appending nonce to the end of the random arrays. 
-	inlen = inlen-1;
-
-	curandState state;
-	curand_init(clock64(), idx, 0, &state);
-
-	#pragma unroll 7
-	for (int i = 0; i < inlen; i++)
+	if (((h[0]+A) >> (32-dif)) == 0)
 	{
-		uint32_t rand = curand_uniform(&state)*100000;
-		input[i+input_stride] = rand;	
+		byte[0] = 1;
+		valid_in[0] = w[0];
+		valid_in[1] = w[1];
+		valid_in[2] = w[2];
+		valid_in[3] = w[3];
+		valid_in[4] = w[4];
+		valid_in[5] = w[5];
+		valid_in[6] = w[6];
+		valid_in[7] = w[7];
+
+		valid_out[0] = h[0]+A;
+		valid_out[1] = h[1]+B;
+		valid_out[2] = h[2]+C;
+		valid_out[3] = h[3]+D;
+		valid_out[4] = h[4]+E;
+		valid_out[5] = h[5]+F;
+		valid_out[6] = h[6]+G;
+		valid_out[7] = h[7]+H;
 	}
-
-	input[inlen+input_stride] = nonce;
-}
-
-__global__
-void sha256Init(uint32_t *input, int inlen, uint32_t nonce, uint32_t *out, uint8_t *state, int dif)
-{
-
-	int idx = blockIdx.x*blockDim.x + threadIdx.x;
-	int input_stride = idx*inlen;
-	int out_stride = idx*8;
-
-	generateStrings(input,inlen,nonce,input_stride,idx);
-	sha256Compute(input,out,idx,input_stride,out_stride);
-	sha256Check(out,dif,out_stride,state,idx);
 }
 
 int main(int argc, char *argv[])
 {
-	int inlen = 8;
-	int threads_per_block = 512;
-	int blocks = 64;
-	int threads = threads_per_block * blocks;
-	uint32_t nonce;
+	int threads_per_block;
+	int blocks;
+	
+	uint32_t nonce = 0xFFFFFFFF;;
 	int dif = atoi(argv[1]);
 
 	clock_t start, end;
-	int counter = 0;
-	int end_counter = atoi(argv[2]);
+	long int counter = 0;
+	threads_per_block = atoi(argv[2]);
+	blocks = atoi(argv[3]);
+
+	int threads = threads_per_block * blocks;
 
 	start = clock();
 	while(1)
 	{
-		uint32_t *d_input;	
-		uint32_t *d_output;
-		uint8_t *d_state;
+		uint32_t *input;	
+		uint32_t *output;
+		uint8_t *byte;
 
-		cudaMallocManaged(&d_input, threads*256);
-		cudaMallocManaged(&d_output, threads*32);
-		cudaMallocManaged(&d_state, threads);
+		cudaMallocManaged(&input, 256);
+		cudaMallocManaged(&output, 256);
+		cudaMallocManaged(&byte, 1);
 
-		nonce = 0x41414141;
-
-		sha256Init<<<blocks, threads_per_block>>>(d_input,inlen,nonce,d_output,d_state,dif);
+		sha256Compute<<<blocks, threads_per_block>>>(input,output,nonce,dif,byte);
 		cudaDeviceSynchronize();
 
-		for (int i=0; i<threads;i++)
+
+		counter += threads;
+
+		if(byte[0]==1)
 		{
-			if (counter >= end_counter)
-				break;
-			if(d_state[i] == 1)
-			{
-				counter++;
-				//for(int j = 0; j < inlen; j++)
-				//	printf("%02x", c_input[j+(i*inlen)]);
-				//printf("\n");
-			}
-		}
+			for(int j = 0; j < 8; j++)
+				printf("%08x", input[j]);
+			printf("\n");
 
-		cudaFree(d_input);
-		cudaFree(d_output);
-		cudaFree(d_state);
+			for(int j = 0; j < 8; j++)
+				printf("%08x", output[j]);
+			printf("\n");
 
-		if (counter >= end_counter)
 			break;
-
+		}	
+				
+		cudaFree(input);
+		cudaFree(output);
+		cudaFree(byte);
 	}
 	end = clock();
 	double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
-	printf("%d solutions in %f seconds at %d difficulty.\n", counter,cpu_time_used,dif);
+	printf("%ld hashes attempted in %f seconds at %d difficulty.\n", counter,cpu_time_used,dif);
 	printf("%f MH/s\n", counter/cpu_time_used/1000000);
 
 	cudaDeviceReset();
