@@ -3,17 +3,9 @@ Author: Eleftherios Amperiadis
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include <stddef.h>
-#include <string.h>
-#include <stdbool.h>
 #include <time.h>
-#include <cstdlib>
 #include <curand_kernel.h>
-
-__device__ void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset, bool* hashed_winner,
-	int idx);
 
 #define UL64(x) x##ULL
 
@@ -82,7 +74,7 @@ __device__ static const uint64_t K[80] =
     UL64(0x5FCB6FAB3AD6FAEC), UL64(0x6C44198C4A475817)
 };
 
-__device__ static const uint64_t H_array[8] = 
+__device__ static const uint64_t h[8] = 
 {
    	UL64(0x6A09E667F3BCC908),
 	UL64(0xBB67AE8584CAA73B),
@@ -94,210 +86,139 @@ __device__ static const uint64_t H_array[8] =
 	UL64(0x5BE0CD19137E2179)
 };
 
-__device__ unsigned char charset[] = "0123456789"
-                     "abcdefghijklmnopqrstuvwxyz"
-                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
 __device__
-void computeHash(unsigned char *padded_array, int size, unsigned char *hashed_array,
-	int idx, bool* hashed_winner, int difficulty)
+void sha512Compute(uint64_t *in, uint64_t *out, int stride)
 {
-	uint64_t s0, s1;
+	uint64_t pad[16];
+	
+	#pragma unroll 8
+	for(int i=0;i<8;i++)
+		pad[i] = in[i+stride];
+
+	pad[8] = 0x8000000000000000;
+
+	#pragma unroll 6
+	for (int i=9;i<16;i++)
+		pad[i] = 0x0000000000000000;
+
+	pad[16] = 0x0000000000000200;
+
 	uint64_t w[80];
 	uint64_t A, B, C, D, E, F, G, H, temp1, temp2;
-	uint64_t state[8];
-
-	int thread_offset_pad = idx*128;
-	int thread_offset_sha512 = idx*64;
-
+	
+	#pragma unroll 16
 	for(int i=0;i<16;i++)
-	{	
-		for(int j=0;j<8;j++)
-		{
-			w[i] <<= 8;
-			w[i] |= (uint64_t)padded_array[i*8+j+thread_offset_pad];
-		}
-	}
+		w[i] = pad[i];
 
+	#pragma unroll 64
 	for(int i=16;i<80;i++)
-	{	
-			s0 = S0(w[i-15]);
-			s1 = S1(w[i-2]);
-			w[i] = w[i-16] + s0 + w[i-7] + s1;		
-	}
-
-	A = H_array[0];
-  	B = H_array[1];
-  	C = H_array[2];
-  	D = H_array[3];
-  	E = H_array[4];
-  	F = H_array[5];
-  	G = H_array[6];
-  	H = H_array[7];
-  	int i = 0;
-
-  	do {
-    P(A, B, C, D, E, F, G, H, w[i], K[i]);
-    i++;
-    P(H, A, B, C, D, E, F, G, w[i], K[i]);
-    i++;
-    P(G, H, A, B, C, D, E, F, w[i], K[i]);
-    i++;
-    P(F, G, H, A, B, C, D, E, w[i], K[i]);
-    i++;
-    P(E, F, G, H, A, B, C, D, w[i], K[i]);
-    i++;
-    P(D, E, F, G, H, A, B, C, w[i], K[i]);
-    i++;
-    P(C, D, E, F, G, H, A, B, w[i], K[i]);
-    i++;
-    P(B, C, D, E, F, G, H, A, w[i], K[i]);
-    i++;
-  	} while (i < 80);
-
-  	state[0] = H_array[0];
-  	state[1] = H_array[1];
-  	state[2] = H_array[2];
-  	state[3] = H_array[3];
-  	state[4] = H_array[4];
-  	state[5] = H_array[5];
-  	state[6] = H_array[6];
-  	state[7] = H_array[7];
-
-  	state[0] += A;
-  	state[1] += B;
-  	state[2] += C;
-  	state[3] += D;
-  	state[4] += E;
-  	state[5] += F;
-  	state[6] += G;
-  	state[7] += H;
+		w[i] = w[i-16] + (S0(w[i-15])) + w[i-7] + (S1(w[i-2]));		
 	
-  	for(int i=0;i<8;i++)
+	A = h[0];
+  	B = h[1];
+  	C = h[2];
+  	D = h[3];
+  	E = h[4];
+  	F = h[5];
+  	G = h[6];
+  	H = h[7];
+  
+  	#pragma unroll 10
+  	for (int i=0;i<80;)
   	{
-	  	hashed_array[thread_offset_sha512+(i*8)]    = state[i] >> 56;
-		hashed_array[thread_offset_sha512+(i*8)+1]  = state[i] >> 48;
-		hashed_array[thread_offset_sha512+(i*8)+2]  = state[i] >> 40;
-		hashed_array[thread_offset_sha512+(i*8)+3]  = state[i] >> 32;
-		hashed_array[thread_offset_sha512+(i*8)+4]  = state[i] >> 24;
-	    hashed_array[thread_offset_sha512+(i*8)+5]  = state[i] >> 16;
-	    hashed_array[thread_offset_sha512+(i*8)+6]  = state[i] >>  8;
-	    hashed_array[thread_offset_sha512+(i*8)+7]  = state[i];
-	}
+	    P(A, B, C, D, E, F, G, H, w[i], K[i]);
+	    i++;
+	    P(H, A, B, C, D, E, F, G, w[i], K[i]);
+	    i++;
+	    P(G, H, A, B, C, D, E, F, w[i], K[i]);
+	    i++;
+	    P(F, G, H, A, B, C, D, E, w[i], K[i]);
+	    i++;
+	    P(E, F, G, H, A, B, C, D, w[i], K[i]);
+	    i++;
+	    P(D, E, F, G, H, A, B, C, w[i], K[i]);
+	    i++;
+	    P(C, D, E, F, G, H, A, B, w[i], K[i]);
+	    i++;
+	    P(B, C, D, E, F, G, H, A, w[i], K[i]);
+    	i++;
+  	} 
 
-	
-	verifyLeadingZeroes(hashed_array, difficulty, thread_offset_sha512, hashed_winner, idx);
+  	out[0+stride] += h[0]+A;
+  	out[1+stride] += h[1]+B;
+  	out[2+stride] += h[2]+C;
+  	out[3+stride] += h[3]+D;
+  	out[4+stride] += h[4]+E;
+  	out[5+stride] += h[5]+F;
+  	out[6+stride] += h[6]+G;
+  	out[7+stride] += h[7]+H;	
 }
 
 __device__
-void verifyLeadingZeroes(unsigned char *hash, int leading_zero, int hash_offset, bool* hashed_winner, int idx)
+void generateInput(uint64_t *in, uint64_t nonce, int stride, int idx)
 {
-	for(int i=0;i<64;i++)
-	{
-		for (int j=0;j<8;j++)
-		{
-			if(leading_zero == 0)
-			{
-				hashed_winner[idx] = true;
-				i = 64;
-				break;
-			}
-			if(((hash[i+hash_offset] >> j) & 0x01) != 0)
-			{
-				i = 64;
-				break;
-			}
-			else
-				leading_zero--;
-		}
-	}
-}
-
-
-__global__
-void padding(unsigned char *message, int size, unsigned char *hashed_array, 
-	unsigned char *padded_array, bool* hashed_winner, uint32_t nonce, int difficulty)
-{
-	int idx = blockIdx.x*blockDim.x + threadIdx.x;
-
-	int thread_offset = idx*128;
-	int message_offset = idx*size;
-	int pad_offset = 112;
-
 	curandState state;
 	curand_init(clock64(), idx, 0, &state);
 
-	for (int i = 0; i < size; i++)
+	#pragma unroll 7
+	for (int i = 0; i < 7; i++)
 	{
-		unsigned int rand = curand_uniform(&state)*100000;
-		message[message_offset+i] = (unsigned char)charset[(rand%63)];
+		uint64_t rand = curand_uniform(&state)*100000;
+		in[i+stride] = rand;	
 	}
+	in[7+stride] = nonce;
+}
 
-	message[message_offset+30] = nonce>>24;
-	message[message_offset+31] = nonce>>16;
-	message[message_offset+32] = nonce>>8;
-	message[message_offset+33] = nonce;
+__device__
+void sha512Validate(uint64_t *out, uint8_t *state, int dif, int idx, int stride)
+{
+	if ((out[stride] >> (64-dif)) == 0)
+		state[idx] = 1;
+	else
+		state[idx] = 0;
+}
 
+__global__
+void sha512Init(uint64_t *in, uint64_t *out, uint64_t nonce, int dif, uint8_t *state)
+{
+	int idx = blockIdx.x*blockDim.x + threadIdx.x;
+	int stride = idx*8;
 
-	for(int i=0;i<size;i++)
-		padded_array[i+thread_offset]=message[i+message_offset];
-	
-	padded_array[size+thread_offset] = 0x80;
-
-	for(int i=size+1+thread_offset;i<pad_offset+thread_offset;i++)
-		padded_array[i] = 0x00;
-
-	uint64_t val = size*8;
-
-	for(int i=pad_offset+thread_offset;i<pad_offset+thread_offset+8;i++)
-		padded_array[i] = 0x00;
-
-	padded_array[pad_offset+thread_offset+8]  =  val >> 56;
-	padded_array[pad_offset+thread_offset+9]  =  val >> 48;
-	padded_array[pad_offset+thread_offset+10] =  val >> 40;
-	padded_array[pad_offset+thread_offset+11] =  val >> 32;
-	padded_array[pad_offset+thread_offset+12] =  val >> 24;
-    padded_array[pad_offset+thread_offset+13] =  val >> 16;
-    padded_array[pad_offset+thread_offset+14] =  val >>  8;
-    padded_array[pad_offset+thread_offset+15] =  val >>  0;
-
-	computeHash((unsigned char*)padded_array, 128, (unsigned char*)hashed_array, idx, hashed_winner, difficulty);
+	generateInput(in,nonce,stride,idx);
+	sha512Compute(in,out,stride);
+	sha512Validate(out,state,dif,idx,stride);
 }
 
 int main(int argc, char *argv[])
 {
-	int array_len = 256;
-	int cuda_blocks = 128;
-	int string_len = 30;
-
-	uint32_t nonce = 0xFFFFFFFF;
-	int difficulty = atoi(argv[1]);
+	int thread_count = 256;
+	int block_count = 128;
+	int threads = thread_count*block_count; 
+	uint64_t nonce = 0xFFFFFFFFFFFFFFFF;
+	
+	int dif = atoi(argv[1]);
 	int end_counter = atoi(argv[2]); 
 
 	clock_t start, end;
 	int counter = 0;
 
 	start = clock();
-
-
 	while(1)
 	{
-		unsigned char* message_array;
-		unsigned char* hashed_array;
-		unsigned char* padded_array;
-		bool* hashed_winner;
+		uint64_t *in;
+		uint64_t *out;
+		uint8_t *state;
 
-		cudaMallocManaged(&message_array, (cuda_blocks*array_len*(string_len+4)*sizeof(unsigned char)));
-		cudaMallocManaged(&hashed_array, (array_len*cuda_blocks*64*sizeof(unsigned char)));
-		cudaMallocManaged(&padded_array, (array_len*cuda_blocks*128*sizeof(unsigned char)));
-		cudaMallocManaged(&hashed_winner, (array_len*cuda_blocks*sizeof(bool)));
+		cudaMallocManaged(&in, threads*512);
+		cudaMallocManaged(&out, threads*512);
+		cudaMallocManaged(&state, threads);
 
-		padding<<<cuda_blocks,array_len>>>(message_array, string_len, hashed_array, padded_array, hashed_winner, nonce, difficulty);
+		sha512Init<<<block_count,thread_count>>>(in,out,nonce,dif,state);
 		cudaDeviceSynchronize();
 
-		for(int i=0;i<array_len*cuda_blocks;i++)
+		for(int i=0;i<threads;i++)
 		{
-			if (hashed_winner[i] == true)
+			if (state[i] == true)
 			{	
 				if (counter >= end_counter)
 					break;
@@ -309,10 +230,9 @@ int main(int argc, char *argv[])
 			}
 		}
 		
-		cudaFree(message_array);
-		cudaFree(hashed_array);
-		cudaFree(padded_array);
-		cudaFree(hashed_winner);
+		cudaFree(in);
+		cudaFree(out);
+		cudaFree(state);
 
 		if (counter >= end_counter)
 			break;
@@ -321,7 +241,7 @@ int main(int argc, char *argv[])
 	end = clock();
 	double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
-	printf("%d solutions in %f seconds at %d difficulty.\n", counter,cpu_time_used,difficulty);
+	printf("%d solutions in %f seconds at %d difficulty.\n", counter,cpu_time_used,dif);
 	printf("%f MH/s\n", counter/cpu_time_used/1000000);
 
 	cudaDeviceReset();
