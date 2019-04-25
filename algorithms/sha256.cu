@@ -2,14 +2,14 @@
 #include <stdio.h>
 #include <time.h>
 
-#define A 0
-#define B 1
-#define C 2
-#define D 3
-#define E 4
-#define F 5
-#define G 6
-#define H 7
+#define A values[0]
+#define B values[1]
+#define C values[2]
+#define D values[3]
+#define E values[4]
+#define F values[5]
+#define G values[6]
+#define H values[7]
 
 #define SHR(x,n) (x>>n)
 
@@ -61,51 +61,41 @@ void sha256Check(uint32_t *out, int dif, int out_stride, uint8_t *state, int idx
 
 
 __device__
-void sha256Compute(uint8_t *pad, uint32_t *s, int idx, int pad_stride, uint32_t *out, uint8_t *state, int dif)
+void sha256Compute(uint8_t *pad, int idx, int pad_stride, uint32_t *out, uint8_t *state, int dif, int out_stride)
 {
-	int out_stride = idx*8;
+	uint32_t s[64];
+	uint32_t values[8];
 
-	s[0+pad_stride]  = pad[0+pad_stride]<<24  | pad[1+pad_stride]<<16  | pad[2+pad_stride]<<8  | pad[3+pad_stride];
-	s[1+pad_stride]  = pad[4+pad_stride]<<24  | pad[5+pad_stride]<<16  | pad[6+pad_stride]<<8  | pad[7+pad_stride];
-	s[2+pad_stride]  = pad[8+pad_stride]<<24  | pad[9+pad_stride]<<16  | pad[10+pad_stride]<<8 | pad[11+pad_stride];
-	s[3+pad_stride]  = pad[12+pad_stride]<<24 | pad[13+pad_stride]<<16 | pad[14+pad_stride]<<8 | pad[15+pad_stride];
-	s[4+pad_stride]  = pad[16+pad_stride]<<24 | pad[17+pad_stride]<<16 | pad[18+pad_stride]<<8 | pad[19+pad_stride];
-	s[5+pad_stride]  = pad[20+pad_stride]<<24 | pad[21+pad_stride]<<16 | pad[22+pad_stride]<<8 | pad[23+pad_stride];
-	s[6+pad_stride]  = pad[24+pad_stride]<<24 | pad[25+pad_stride]<<16 | pad[26+pad_stride]<<8 | pad[27+pad_stride];
-	s[7+pad_stride]  = pad[28+pad_stride]<<24 | pad[29+pad_stride]<<16 | pad[30+pad_stride]<<8 | pad[31+pad_stride];
-	s[8+pad_stride]  = pad[32+pad_stride]<<24 | pad[33+pad_stride]<<16 | pad[34+pad_stride]<<8 | pad[35+pad_stride];
-	s[9+pad_stride]  = pad[36+pad_stride]<<24 | pad[37+pad_stride]<<16 | pad[38+pad_stride]<<8 | pad[39+pad_stride];
-	s[10+pad_stride] = pad[40+pad_stride]<<24 | pad[41+pad_stride]<<16 | pad[42+pad_stride]<<8 | pad[43+pad_stride];
-	s[11+pad_stride] = pad[44+pad_stride]<<24 | pad[45+pad_stride]<<16 | pad[46+pad_stride]<<8 | pad[47+pad_stride];
-	s[12+pad_stride] = pad[48+pad_stride]<<24 | pad[49+pad_stride]<<16 | pad[50+pad_stride]<<8 | pad[51+pad_stride];
-	s[13+pad_stride] = pad[52+pad_stride]<<24 | pad[53+pad_stride]<<16 | pad[54+pad_stride]<<8 | pad[55+pad_stride];
-	s[14+pad_stride] = pad[56+pad_stride]<<24 | pad[57+pad_stride]<<16 | pad[58+pad_stride]<<8 | pad[59+pad_stride];
-	s[15+pad_stride] = pad[60+pad_stride]<<24 | pad[61+pad_stride]<<16 | pad[62+pad_stride]<<8 | pad[63+pad_stride];
+	s[0]  = pad[0+pad_stride]<<24  | pad[1+pad_stride]<<16  | pad[2+pad_stride]<<8  | pad[3+pad_stride];
+	s[1]  = pad[4+pad_stride]<<24  | pad[5+pad_stride]<<16  | pad[6+pad_stride]<<8  | pad[7+pad_stride];
+	s[2]  = pad[8+pad_stride]<<24  | pad[9+pad_stride]<<16  | pad[10+pad_stride]<<8 | pad[11+pad_stride];
+	s[3]  = pad[12+pad_stride]<<24 | pad[13+pad_stride]<<16 | pad[14+pad_stride]<<8 | pad[15+pad_stride];
+	s[4]  = pad[16+pad_stride]<<24 | pad[17+pad_stride]<<16 | pad[18+pad_stride]<<8 | pad[19+pad_stride];
+	s[5]  = pad[20+pad_stride]<<24 | pad[21+pad_stride]<<16 | pad[22+pad_stride]<<8 | pad[23+pad_stride];
+	s[6]  = pad[24+pad_stride]<<24 | pad[25+pad_stride]<<16 | pad[26+pad_stride]<<8 | pad[27+pad_stride];
+	s[7]  = pad[28+pad_stride]<<24 | pad[29+pad_stride]<<16 | pad[30+pad_stride]<<8 | pad[31+pad_stride];
+	s[8]  = pad[32+pad_stride]<<24 | pad[33+pad_stride]<<16 | pad[34+pad_stride]<<8 | pad[35+pad_stride];
+	s[9]  = pad[36+pad_stride]<<24 | pad[37+pad_stride]<<16 | pad[38+pad_stride]<<8 | pad[39+pad_stride];
+	s[10] = pad[40+pad_stride]<<24 | pad[41+pad_stride]<<16 | pad[42+pad_stride]<<8 | pad[43+pad_stride];
+	s[11] = pad[44+pad_stride]<<24 | pad[45+pad_stride]<<16 | pad[46+pad_stride]<<8 | pad[47+pad_stride];
+	s[12] = pad[48+pad_stride]<<24 | pad[49+pad_stride]<<16 | pad[50+pad_stride]<<8 | pad[51+pad_stride];
+	s[13] = pad[52+pad_stride]<<24 | pad[53+pad_stride]<<16 | pad[54+pad_stride]<<8 | pad[55+pad_stride];
+	s[14] = pad[56+pad_stride]<<24 | pad[57+pad_stride]<<16 | pad[58+pad_stride]<<8 | pad[59+pad_stride];
+	s[15] = pad[60+pad_stride]<<24 | pad[61+pad_stride]<<16 | pad[62+pad_stride]<<8 | pad[63+pad_stride];
 	
-
-
-	#pragma unroll 47
+	#pragma unroll 48
 	for(int i=16;i<64;i++)
-		s[i+pad_stride] = s[i-16+pad_stride] + (s0(s[i-15+pad_stride])) + s[i-7+pad_stride] + (s1(s[i-2 +pad_stride]));
+		s[16] = s[i-16] + (s0(s[i-15]))  + s[i-7]   + (s1(s[i-2]));  
 	
 
-	int A_ = A+out_stride;
-	int B_ = B+out_stride;
-	int C_ = C+out_stride;
-	int D_ = D+out_stride;
-	int E_ = E+out_stride;
-	int F_ = F+out_stride;
-	int G_ = G+out_stride;
-	int H_ = H+out_stride;
-
-	out[A_] = h[0];
-	out[B_] = h[1];
-	out[C_] = h[2];
-	out[D_] = h[3];
-	out[E_] = h[4];
-	out[F_] = h[5];
-	out[G_] = h[6];
-	out[H_] = h[7];
+	A = h[0];
+	B = h[1];
+	C = h[2];
+	D = h[3];
+	E = h[4];
+	F = h[5];
+	G = h[6];
+	H = h[7];
 
 	uint32_t temp1;
 	uint32_t temp2;
@@ -113,117 +103,54 @@ void sha256Compute(uint8_t *pad, uint32_t *s, int idx, int pad_stride, uint32_t 
 	#pragma unroll 64
 	for (int i=0;i<64;i++)
 	{
-		temp1 = out[H_]+(S1(out[E_]))+(ch(out[E_],out[F_],out[G_]))+k[i]+s[i+pad_stride];
-		temp2 = (S0(out[A_]))+(maj(out[A_],out[B_],out[C_]));
+		temp1 = H+(S1(E))+(ch(E,F,G))+k[i]+s[i];
+		temp2 = (S0(A))+(maj(A,B,C));
 
-		out[H_] = out[G_];
-		out[G_] = out[F_];
-		out[F_] = out[E_];
-		out[E_] = out[D_]+temp1;
-		out[D_] = out[C_];
-		out[C_] = out[B_];
-		out[B_] = out[A_];
-		out[A_] = temp1+temp2;
+		H = G;
+		G = F;
+		F = E;
+		E = D+temp1;
+		D = C;
+		C = B;
+		B = A;
+		A = temp1+temp2;
 	}
 
-	out[A_] = h[0]+out[A_];
-	out[B_] = h[1]+out[B_];
-	out[C_] = h[2]+out[C_];
-	out[D_] = h[3]+out[D_];
-	out[E_] = h[4]+out[E_];
-	out[F_] = h[5]+out[F_];
-	out[G_] = h[6]+out[G_];
-	out[H_] = h[7]+out[H_];
+	out[0+out_stride] = h[0]+A;
+	out[1+out_stride] = h[1]+B;
+	out[2+out_stride] = h[2]+C;
+	out[3+out_stride] = h[3]+D;
+	out[4+out_stride] = h[4]+E;
+	out[5+out_stride] = h[5]+F;
+	out[6+out_stride] = h[6]+G;
+	out[7+out_stride] = h[7]+H;
 
 	sha256Check(out,dif,out_stride,state,idx);
 }
 
 __device__
 void sha256Pad(uint8_t *input, int inlen, uint32_t *output, uint8_t *pad, int idx, int input_stride, 
-			   uint32_t *schedule, uint8_t *state, int dif)
+			   uint8_t *state, int dif, int pad_stride)
 {
-	int pad_stride = idx*64;
-
-	pad[0+pad_stride]  =  input[0+input_stride];
-	pad[1+pad_stride]  =  input[1+input_stride];
-	pad[2+pad_stride]  =  input[2+input_stride];
-	pad[3+pad_stride]  =  input[3+input_stride];
-	pad[4+pad_stride]  =  input[4+input_stride];
-	pad[5+pad_stride]  =  input[5+input_stride];
-	pad[6+pad_stride]  =  input[6+input_stride];
-	pad[7+pad_stride]  =  input[7+input_stride];
-	pad[8+pad_stride]  =  input[8+input_stride];
-	pad[9+pad_stride]  =  input[9+input_stride];
-	pad[10+pad_stride] =  input[10+input_stride];
-	pad[11+pad_stride] =  input[11+input_stride];
-	pad[12+pad_stride] =  input[12+input_stride];
-	pad[13+pad_stride] =  input[13+input_stride];
-	pad[14+pad_stride] =  input[14+input_stride];
-	pad[15+pad_stride] =  input[15+input_stride];
-	pad[16+pad_stride] =  input[16+input_stride];
-	pad[17+pad_stride] =  input[17+input_stride];
-	pad[18+pad_stride] =  input[18+input_stride];
-	pad[19+pad_stride] =  input[19+input_stride];
-	pad[20+pad_stride] =  input[20+input_stride];
-	pad[21+pad_stride] =  input[21+input_stride];
-	pad[22+pad_stride] =  input[22+input_stride];
-	pad[23+pad_stride] =  input[23+input_stride];
-	pad[24+pad_stride] =  input[24+input_stride];
-	pad[25+pad_stride] =  input[25+input_stride];
-	pad[26+pad_stride] =  input[26+input_stride];
-	pad[27+pad_stride] =  input[27+input_stride];
-	pad[28+pad_stride] =  input[28+input_stride];
-	pad[29+pad_stride] =  input[29+input_stride];
+	#pragma unroll 30
+	for (int i=0;i< 30;i++)
+		pad[i+pad_stride]  =  input[i+input_stride];
 	
 	pad[30+pad_stride] =  0x80;
 
-	pad[31+pad_stride] =  0x00;
-	pad[32+pad_stride] =  0x00; 
-	pad[33+pad_stride] =  0x00;
-	pad[34+pad_stride] =  0x00;
-	pad[35+pad_stride] =  0x00;
-	pad[36+pad_stride] =  0x00;
-	pad[37+pad_stride] =  0x00;
-	pad[38+pad_stride] =  0x00;
-	pad[39+pad_stride] =  0x00;
-	pad[40+pad_stride] =  0x00;
-	pad[41+pad_stride] =  0x00;
-	pad[42+pad_stride] =  0x00;
-	pad[43+pad_stride] =  0x00;
-	pad[44+pad_stride] =  0x00;
-	pad[45+pad_stride] =  0x00;
-	pad[46+pad_stride] =  0x00;
-	pad[47+pad_stride] =  0x00;
-	pad[48+pad_stride] =  0x00;
-	pad[49+pad_stride] =  0x00;
-	pad[50+pad_stride] =  0x00;
-	pad[51+pad_stride] =  0x00;
-	pad[52+pad_stride] =  0x00;
-	pad[53+pad_stride] =  0x00;
-	pad[54+pad_stride] =  0x00;
-	pad[55+pad_stride] =  0x00;
+	#pragma unroll 32
+	for (int i=31;i<63;i++)
+		pad[i+pad_stride] =  0x00;
 	
-	// Padding length of input (constant length of 240)
-	pad[56+pad_stride] =  0x00;
-	pad[57+pad_stride] =  0x00;
-	pad[58+pad_stride] =  0x00;
-	pad[59+pad_stride] =  0x00;
-	pad[60+pad_stride] =  0x00;
-	pad[61+pad_stride] =  0x00;
-	pad[62+pad_stride] =  0x00;
 	pad[63+pad_stride] =  0xf0;
 
-	sha256Compute(pad,schedule,idx,pad_stride,output,state,dif);
 }
 
 
-__global__
+__device__
 void generateStrings(uint8_t *input, int inlen, uint8_t *nonce, uint32_t *output, 
-					 uint8_t *pad, uint32_t *schedule, uint8_t *state_a, int dif)
+					 uint8_t *pad, uint8_t *state_a, int dif, int idx, int input_stride)
 {
-	int idx = blockIdx.x*blockDim.x + threadIdx.x;
-
-	int input_stride = idx*inlen;
 
 	// Appending nonce to the end of the random arrays. 
 	inlen = inlen-4;
@@ -241,60 +168,72 @@ void generateStrings(uint8_t *input, int inlen, uint8_t *nonce, uint32_t *output
 	input[inlen+input_stride] =   nonce[0];
 	input[inlen+input_stride+1] = nonce[1];
 	input[inlen+input_stride+2] = nonce[2];
-	input[inlen+input_stride+3] = nonce[3];
-
-	sha256Pad(input,inlen+4,output,pad,idx,input_stride,schedule,state_a,dif);
+	input[inlen+input_stride+3] = nonce[3];	
 }
 
-int main()
+__global__
+void sha256Init(uint8_t *input, int inlen, uint8_t *nonce, uint32_t *out, 
+					 uint8_t *pad, uint8_t *state, int dif)
 {
-	uint8_t *c_input, *d_input;
-	uint8_t *c_nonce, *d_nonce;
-	uint32_t *d_output;
-	uint8_t *c_state, *d_state;
-	uint8_t *d_pad;
-	uint32_t *d_schedule;
 
+	int idx = blockIdx.x*blockDim.x + threadIdx.x;
+	int input_stride = idx*inlen;
+	int pad_stride = idx*64;
+	int out_stride = idx*8;
+
+
+	generateStrings(input,inlen,nonce,out,pad,state,dif,idx,input_stride);
+	sha256Pad(input,inlen,out,pad,idx,input_stride,state,dif,pad_stride);
+	sha256Compute(pad,idx,pad_stride,out,state,dif,out_stride);
+	sha256Check(out,dif,out_stride,state,idx);
+}
+
+int main(int argc, char *argv[])
+{
 	int inlen = 30;
 	int threads_per_block = 256;
 	int blocks = 128;
 	int threads = threads_per_block * blocks;
-	int dif = 20;
+	int dif = atoi(argv[1]);
 
+	clock_t start, end;
+	int counter = 0;
+	int end_counter = atoi(argv[2]);
+
+	start = clock();
 	while(1)
 	{
+		uint8_t *d_input;
+		uint8_t *d_nonce;
+		uint32_t *d_output;
+		uint8_t *d_state;
+		uint8_t *d_pad;
 
-		c_input  =  (uint8_t*)malloc(threads*inlen);
-		c_nonce  =  (uint8_t*)malloc(4);
-		c_state  =  (uint8_t*)malloc(threads);
+		cudaMallocManaged(&d_input, threads*inlen);
+		cudaMallocManaged(&d_nonce, 4);
+		cudaMallocManaged(&d_output, threads*32);
+		cudaMallocManaged(&d_pad, threads*64);
+		cudaMallocManaged(&d_state, threads);
 
-		c_nonce[0] = 0x41;
-		c_nonce[1] = 0x41;
-		c_nonce[2] = 0x41;
-		c_nonce[3] = 0x41;
+		d_nonce[0] = 0x41;
+		d_nonce[1] = 0x41;
+		d_nonce[2] = 0x41;
+		d_nonce[3] = 0x41;
 
-		cudaMalloc(&d_input, threads*inlen);
-		cudaMalloc(&d_nonce, 4);
-		cudaMalloc(&d_output, threads*32);
-		cudaMalloc(&d_pad, threads*64);
-		cudaMalloc(&d_schedule, threads*256);
-		cudaMalloc(&d_state, threads);
 
-		cudaMemcpy(d_nonce, c_nonce, 4, cudaMemcpyHostToDevice);
-
-		generateStrings<<<blocks, threads_per_block>>>(d_input,inlen,d_nonce,d_output,d_pad,d_schedule,d_state,dif);
+		sha256Init<<<blocks, threads_per_block>>>(d_input,inlen,d_nonce,d_output,d_pad,d_state,dif);
 		cudaDeviceSynchronize();
-
-		cudaMemcpy(c_input, d_input, threads*inlen, cudaMemcpyDeviceToHost);
-		cudaMemcpy(c_state, d_state, threads, cudaMemcpyDeviceToHost);
 
 		for (int i=0; i<threads;i++)
 		{
-			if(c_state[i] == 1)
+			if (counter >= end_counter)
+				break;
+			if(d_state[i] == 1)
 			{
-				for(int j = 0; j < inlen; j++)
-					printf("%02x", c_input[j+(i*inlen)]);
-				printf("\n");
+				counter++;
+				//for(int j = 0; j < inlen; j++)
+				//	printf("%02x", c_input[j+(i*inlen)]);
+				//printf("\n");
 			}
 		}
 
@@ -302,13 +241,17 @@ int main()
 		cudaFree(d_nonce);
 		cudaFree(d_output);
 		cudaFree(d_pad);
-		cudaFree(d_schedule);
 		cudaFree(d_state);
-		free(c_input);
-		free(c_nonce);
-		free(c_state);
+
+		if (counter >= end_counter)
+			break;
 
 	}
+	end = clock();
+	double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+	printf("%d solutions in %f seconds at %d difficulty.\n", counter,cpu_time_used,dif);
+	printf("%f MH/s\n", counter/cpu_time_used/1000000);
 
 	cudaDeviceReset();
 

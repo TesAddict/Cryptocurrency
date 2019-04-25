@@ -267,11 +267,18 @@ void padding(unsigned char *message, int size, unsigned char *hashed_array,
 int main(int argc, char *argv[])
 {
 	int array_len = 256;
-	int cuda_blocks = 64;
+	int cuda_blocks = 128;
 	int string_len = 30;
 
 	uint32_t nonce = 0xFFFFFFFF;
-	int difficulty = atoi(argv[1]); 
+	int difficulty = atoi(argv[1]);
+	int end_counter = atoi(argv[2]); 
+
+	clock_t start, end;
+	int counter = 0;
+
+	start = clock();
+
 
 	while(1)
 	{
@@ -292,9 +299,13 @@ int main(int argc, char *argv[])
 		{
 			if (hashed_winner[i] == true)
 			{	
-				for(int j=0;j<64;j++)
-					printf("%.2x", hashed_array[i*64+j]);
-				printf("\n");
+				if (counter >= end_counter)
+					break;
+				counter++;
+
+				//for(int j=0;j<64;j++)
+				//	printf("%.2x", hashed_array[i*64+j]);
+				//printf("\n");
 			}
 		}
 		
@@ -302,8 +313,16 @@ int main(int argc, char *argv[])
 		cudaFree(hashed_array);
 		cudaFree(padded_array);
 		cudaFree(hashed_winner);
+
+		if (counter >= end_counter)
+			break;
 		
 	}
+	end = clock();
+	double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+	printf("%d solutions in %f seconds at %d difficulty.\n", counter,cpu_time_used,difficulty);
+	printf("%f MH/s\n", counter/cpu_time_used/1000000);
 
 	cudaDeviceReset();
 	return 0;
