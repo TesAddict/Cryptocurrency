@@ -51,7 +51,7 @@ static const uint32_t k[64] =
 };
 
 __global__
-void sha256Compute(uint32_t *valid_in, uint32_t *valid_out, uint32_t nonce, int dif, uint8_t *byte)
+void sha256Compute(uint32_t *valid_in, uint32_t nonce, int dif, uint8_t *byte)
 {
 	uint32_t w[64];
 	int idx = blockIdx.x*blockDim.x + threadIdx.x;
@@ -148,6 +148,7 @@ void sha256Compute(uint32_t *valid_in, uint32_t *valid_out, uint32_t nonce, int 
 	#pragma unroll 64
 	for (int i=0;i<64;i++)
 	{
+
 		temp1 = H+(S1(E))+(ch(E,F,G))+k[i]+w[i];
 		temp2 = (S0(A))+(maj(A,B,C));
 
@@ -159,6 +160,7 @@ void sha256Compute(uint32_t *valid_in, uint32_t *valid_out, uint32_t nonce, int 
 		C = B;
 		B = A;
 		A = temp1+temp2;
+
 	}
 
 
@@ -174,15 +176,7 @@ void sha256Compute(uint32_t *valid_in, uint32_t *valid_out, uint32_t nonce, int 
 		valid_in[5] = w[5];
 		valid_in[6] = w[6];
 		valid_in[7] = w[7];
-
-		valid_out[0] = h[0]+A;
-		valid_out[1] = h[1]+B;
-		valid_out[2] = h[2]+C;
-		valid_out[3] = h[3]+D;
-		valid_out[4] = h[4]+E;
-		valid_out[5] = h[5]+F;
-		valid_out[6] = h[6]+G;
-		valid_out[7] = h[7]+H;
+		asm("trap;");
 	}
 }
 
@@ -205,14 +199,12 @@ int main(int argc, char *argv[])
 	while(1)
 	{
 		uint32_t *input;	
-		uint32_t *output;
 		uint8_t *byte;
 
 		cudaMallocManaged(&input, 256);
-		cudaMallocManaged(&output, 256);
 		cudaMallocManaged(&byte, 1);
 
-		sha256Compute<<<blocks, threads_per_block>>>(input,output,nonce,dif,byte);
+		sha256Compute<<<blocks, threads_per_block>>>(input,nonce,dif,byte);
 		cudaDeviceSynchronize();
 
 
@@ -223,16 +215,10 @@ int main(int argc, char *argv[])
 			for(int j = 0; j < 8; j++)
 				printf("%08x", input[j]);
 			printf("\n");
-
-			for(int j = 0; j < 8; j++)
-				printf("%08x", output[j]);
-			printf("\n");
-
 			break;
 		}	
 				
 		cudaFree(input);
-		cudaFree(output);
 		cudaFree(byte);
 	}
 	end = clock();
