@@ -1,2 +1,1 @@
-# X16R-CUDA-Miner
-An X16R Nvidia miner.
+A repository for implementing hashing algorithms and cryptocurrency miners for educational purposes. 
