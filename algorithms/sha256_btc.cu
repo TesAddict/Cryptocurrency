@@ -53,17 +53,43 @@ static const uint32_t K[64] =
 
 
 __device__ uint32_t h0[8];
+__device__ uint32_t target[8];
 __device__ bool computeH0 = false;
 
+__device__
+void computeTarget(uint32_t nbits)
+{
+	uint32_t mantissa = nbits & 0x00FFFFFF;
+	uint32_t exponent = (nbits & 0xFF000000) >> 24;
+	uint32_t offset = 0x20 - (exponent - 0x03);
+	uint8_t inter[32]={0};
+	
+	inter[offset-1]   = (mantissa & 0x000000FF);
+
+	inter[offset-2] = (mantissa & 0x0000FF00) >> 8;
+
+	inter[offset-3] = (mantissa & 0x00FF0000) >> 16;
+
+	target[0] = inter[0]<<24  | inter[1]<<16  | inter[2]<<8  | inter[3];
+	target[1] = inter[4]<<24  | inter[5]<<16  | inter[6]<<8  | inter[7];
+	target[2] = inter[8]<<24  | inter[9]<<16  | inter[10]<<8 | inter[11];
+	target[3] = inter[12]<<24 | inter[13]<<16 | inter[14]<<8 | inter[15];
+	target[4] = inter[16]<<24 | inter[17]<<16 | inter[18]<<8 | inter[19];
+	target[5] = inter[20]<<24 | inter[21]<<16 | inter[22]<<8 | inter[23];
+	target[6] = inter[24]<<24 | inter[25]<<16 | inter[26]<<8 | inter[27];
+	target[7] = inter[28]<<24 | inter[29]<<16 | inter[30]<<8 | inter[31];
+}
 
 __global__
-void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uint32_t *h2)
-{
+void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uint32_t *h2,unsigned long long int *counter)
+{	
+	
 	uint32_t w[64];
-	uint32_t A,B,C,D,E,F,G,H,temp1,temp2;
+	uint32_t A,B,C,D,E,F,G,H,temp1,temp2,nonce,timestamp;
+
  
 	int idx = blockIdx.x*blockDim.x + threadIdx.x;
-	int idx_mod = idx;
+	long int idx_mod = idx;
 
 	while(1)
 	{
@@ -144,8 +170,7 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 			G = h[6];
 			H = h[7];
 
-		
-
+	
 			P(A, B, C, D, E, F, G, H, w[0], K[0]);  
 			P(H, A, B, C, D, E, F, G, w[1], K[1]); 
 			P(G, H, A, B, C, D, E, F, w[2], K[2]);  
@@ -228,17 +253,18 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 				h0[5] = h[5]+F;
 				h0[6] = h[6]+G;
 				h0[7] = h[7]+H;
+				computeTarget(block_header[18]);
 				computeH0 = true;
 			}
 			__syncthreads();
 		}
 
-		idx += threads;
-
+		
 		w[0]  = block_header[16];
 		w[1]  = block_header[17];
 		w[2]  = block_header[18];
 		w[3]  = block_header[19]+idx_mod;
+		nonce = w[3];
 		w[4]  = 0x80000000; 
 		w[5]  = 0x00000000;
 		w[6]  = 0x00000000;
@@ -308,7 +334,6 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 		F = h0[5];
 		G = h0[6];
 		H = h0[7];
-
 
 		P(A, B, C, D, E, F, G, H, w[0], K[0]);  
 		P(H, A, B, C, D, E, F, G, w[1], K[1]); 
@@ -529,25 +554,40 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 		P(C, D, E, F, G, H, A, B, w[62], K[62]);
 		P(B, C, D, E, F, G, H, A, w[63], K[63]);
 
-		h1[0] = w[0];
-		h1[1] = w[1];
-		h1[2] = w[2];
-		h1[3] = w[3];
-		h1[4] = w[4];
-		h1[5] = w[5];
-		h1[6] = w[6];
-		h1[7] = w[7];
+		
+		if (h[0]+A<=target[0])
+		{
+			h1[0] = w[0];
+			h1[1] = w[1];
+			h1[2] = w[2];
+			h1[3] = w[3];
+			h1[4] = w[4];
+			h1[5] = w[5];
+			h1[6] = w[6];
+			h1[7] = w[7];
 
-		h2[0] = h[0]+A;
-		h2[1] = h[1]+B;
-		h2[2] = h[2]+C;
-		h2[3] = h[3]+D;
-		h2[4] = h[4]+E;
-		h2[5] = h[5]+F;
-		h2[6] = h[6]+G;
-		h2[7] = h[7]+H;	
+			h2[0] = h[0]+A;
+			h2[1] = h[1]+B;
+			h2[2] = h[2]+C;
+			h2[3] = h[3]+D;
+			h2[4] = h[4]+E;
+			h2[5] = h[5]+F;
+			h2[6] = h[6]+G;
+			h2[7] = h[7]+H;
+
+			block_header[19] = nonce;
+			asm("trap;");
+		}	
 		idx_mod += threads;
-		asm("trap;");
+		if (idx_mod >= 0xffffffff)
+		{
+			idx_mod = idx;
+			computeH0 = false;
+
+
+		}
+		atomicAdd(counter,1);
+		__syncthreads();
 	}
 }
 
@@ -584,18 +624,25 @@ int main(int argc, char *argv[])
 	uint32_t *block_header;
 	uint32_t *h1;
 	uint32_t *h2;
+	unsigned long long int *counter;
 
 	cudaMallocManaged(&block_header, 640);
 	cudaMallocManaged(&h1, 256);
 	cudaMallocManaged(&h2, 256);
+	cudaMallocManaged(&counter, 64);
 
-	#pragma unroll 19
-	for(int i=0;i<19;i++)
+	
+	#pragma unroll 17
+	for(int i=0;i<17;i++)
 		block_header[i] = 0xFFFFFFFF;
+	block_header[17] = time(NULL);
+	block_header[18] = 0x1d1bc330;
 	block_header[19] = 0x00000000;
 
+	clock_t start, end;
+	start = clock();
 
-	sha256ComputeH2<<<blocks, threads_per_block>>>(block_header, threads, h1, h2);
+	sha256ComputeH2<<<blocks, threads_per_block>>>(block_header,threads,h1,h2,counter);
 	cudaDeviceSynchronize();
 
 	for(int i=0;i<20;i++)
@@ -610,11 +657,16 @@ int main(int argc, char *argv[])
 		printf("%08x", h2[i]);
 	printf("\n");
 
-	
+	end = clock();
+	double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
+	printf("%lld hashes attempted in %f seconds.\n", counter[0],cpu_time_used);
+	printf("%f MH/s\n", counter[0]/cpu_time_used/1000000);
+	
 	cudaFree(block_header);
 	cudaFree(h1);
 	cudaFree(h2);
+	cudaFree(counter);
 	cudaDeviceReset();
 
 	return 0;
