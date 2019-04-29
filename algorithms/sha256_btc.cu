@@ -59,6 +59,30 @@ __device__ uint32_t h0[8];
 __device__ uint32_t target[8];
 __device__ bool computeH0 = false;
 
+__host__
+void computeTargetHost(uint32_t nbits, uint32_t *target)
+{
+	uint32_t mantissa = nbits & 0x00FFFFFF;
+	uint32_t exponent = (nbits & 0xFF000000) >> 24;
+	uint32_t offset = 0x20 - (exponent - 0x03);
+	uint8_t inter[32]={0};
+	
+	inter[offset-1]   = (mantissa & 0x000000FF);
+
+	inter[offset-2] = (mantissa & 0x0000FF00) >> 8;
+
+	inter[offset-3] = (mantissa & 0x00FF0000) >> 16;
+
+	target[0] = inter[0]<<24  | inter[1]<<16  | inter[2]<<8  | inter[3];
+	target[1] = inter[4]<<24  | inter[5]<<16  | inter[6]<<8  | inter[7];
+	target[2] = inter[8]<<24  | inter[9]<<16  | inter[10]<<8 | inter[11];
+	target[3] = inter[12]<<24 | inter[13]<<16 | inter[14]<<8 | inter[15];
+	target[4] = inter[16]<<24 | inter[17]<<16 | inter[18]<<8 | inter[19];
+	target[5] = inter[20]<<24 | inter[21]<<16 | inter[22]<<8 | inter[23];
+	target[6] = inter[24]<<24 | inter[25]<<16 | inter[26]<<8 | inter[27];
+	target[7] = inter[28]<<24 | inter[29]<<16 | inter[30]<<8 | inter[31];
+}
+
 __device__
 void computeTarget(uint32_t nbits)
 {
@@ -98,6 +122,8 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 	{
 		if (computeH0 == false)
 		{
+			
+			idx_mod = idx;
 			w[0]  = block_header[0];
 			w[1]  = block_header[1];
 			w[2]  = block_header[2];
@@ -247,7 +273,7 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 			P(B, C, D, E, F, G, H, A, w[63], K[63]);
 
 			if (idx == 0)
-			{
+			{	
 				h0[0] = h[0]+A;
 				h0[1] = h[1]+B;
 				h0[2] = h[2]+C;
@@ -257,6 +283,7 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 				h0[6] = h[6]+G;
 				h0[7] = h[7]+H;
 				computeTarget(block_header[18]);
+				block_header[17] = clock();
 				computeH0 = true;
 			}
 			__syncthreads();
@@ -558,7 +585,7 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 		P(B, C, D, E, F, G, H, A, w[63], K[63]);
 
 		
-		if (h[0]+A<=target[0])
+		if ((h[0]+A<=target[0]) && (h[1]+B<=target[1]))
 		{
 			atomicExch(&h1[0],w[0]);
 			atomicExch(&h1[1],w[1]);
@@ -581,17 +608,16 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 			atomicExch(&block_header[19],nonce);
 			asm("trap;");
 		}	
+
+		
+		
+		if (idx_mod >= 0xffffffff)
+		{
+			computeH0 = false;	
+		}
+
 		idx_mod += threads;
 
-		/* 
-		This is problematic. The current check for overflow leads to
-		incorrect results. 
-		*/
-		//if (idx_mod >= 0xffffffff)
-		//{
-		//	idx_mod = idx;
-		//	computeH0 = false;
-		//}
 		atomicAdd(counter,1);
 		__syncthreads();
 	}
@@ -650,16 +676,29 @@ int main(int argc, char *argv[])
 	sha256ComputeH2<<<blocks, threads_per_block>>>(block_header,threads,h1,h2,counter);
 	cudaDeviceSynchronize();
 
+	printf("Block Header: ");
 	for(int i=0;i<20;i++)
 		printf("%08x", block_header[i]);
 	printf("\n");
 
+	printf("First Round:  ");
 	for(int i=0;i<8;i++)
 		printf("%08x", h1[i]);
 	printf("\n");
 
+	printf("Solution:     ");
 	for(int i=0;i<8;i++)
 		printf("%08x", h2[i]);
+	printf("\n");
+
+	uint32_t *target_host;
+	target_host = (uint32_t*)calloc(8,256);
+
+	computeTargetHost(block_header[18], target_host);
+
+	printf("Target:       ");
+	for(int i=0;i<8;i++)
+		printf("%08x", target_host[i]);
 	printf("\n");
 
 	end = clock();
