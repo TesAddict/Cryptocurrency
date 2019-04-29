@@ -560,35 +560,38 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 		
 		if (h[0]+A<=target[0])
 		{
-			h1[0] = w[0];
-			h1[1] = w[1];
-			h1[2] = w[2];
-			h1[3] = w[3];
-			h1[4] = w[4];
-			h1[5] = w[5];
-			h1[6] = w[6];
-			h1[7] = w[7];
+			atomicExch(&h1[0],w[0]);
+			atomicExch(&h1[1],w[1]);
+			atomicExch(&h1[2],w[2]);
+			atomicExch(&h1[3],w[3]);
+			atomicExch(&h1[4],w[4]);
+			atomicExch(&h1[5],w[5]);
+			atomicExch(&h1[6],w[6]);
+			atomicExch(&h1[7],w[7]);
 
-			h2[0] = h[0]+A;
-			h2[1] = h[1]+B;
-			h2[2] = h[2]+C;
-			h2[3] = h[3]+D;
-			h2[4] = h[4]+E;
-			h2[5] = h[5]+F;
-			h2[6] = h[6]+G;
-			h2[7] = h[7]+H;
-
-			block_header[19] = nonce;
+			atomicExch(&h2[0],h[0]+A);
+			atomicExch(&h2[1],h[1]+B);
+			atomicExch(&h2[2],h[2]+C);
+			atomicExch(&h2[3],h[3]+D);
+			atomicExch(&h2[4],h[4]+E);
+			atomicExch(&h2[5],h[5]+F);
+			atomicExch(&h2[6],h[6]+G);
+			atomicExch(&h2[7],h[7]+H);
+			
+			atomicExch(&block_header[19],nonce);
 			asm("trap;");
 		}	
 		idx_mod += threads;
-		if (idx_mod >= 0xffffffff)
-		{
-			idx_mod = idx;
-			computeH0 = false;
 
-
-		}
+		/* 
+		This is problematic. The current check for overflow leads to
+		incorrect results. 
+		*/
+		//if (idx_mod >= 0xffffffff)
+		//{
+		//	idx_mod = idx;
+		//	computeH0 = false;
+		//}
 		atomicAdd(counter,1);
 		__syncthreads();
 	}
@@ -638,6 +641,8 @@ int main(int argc, char *argv[])
 
 
 	getBlockHeader(block_header,filename);
+
+	block_header[17] = time(NULL);
 	
 	clock_t start, end;
 	start = clock();
