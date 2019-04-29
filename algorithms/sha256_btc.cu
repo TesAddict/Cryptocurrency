@@ -1,6 +1,9 @@
 #include <curand_kernel.h>
 #include <stdio.h>
 #include <time.h>
+extern "C" { 
+	#include "block_header.h"
+	}
 
 #define DEVICE 0
 
@@ -596,10 +599,12 @@ int main(int argc, char *argv[])
 {
 	int threads_per_block;
 	int blocks;
+	char *filename;
 	
 	
 	threads_per_block = atoi(argv[1]);
 	blocks = atoi(argv[2]);
+	filename = argv[3];
 	
 	int device;
 	cudaGetDeviceCount(&device);
@@ -631,14 +636,9 @@ int main(int argc, char *argv[])
 	cudaMallocManaged(&h2, 256);
 	cudaMallocManaged(&counter, 64);
 
-	
-	#pragma unroll 17
-	for(int i=0;i<17;i++)
-		block_header[i] = 0xFFFFFFFF;
-	block_header[17] = time(NULL);
-	block_header[18] = 0x1d1bc330;
-	block_header[19] = 0x00000000;
 
+	getBlockHeader(block_header,filename);
+	
 	clock_t start, end;
 	start = clock();
 
