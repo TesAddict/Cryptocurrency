@@ -49,6 +49,7 @@ static const uint32_t K[64] =
    	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
+__device__ bool global_flag = true;
 
 __global__
 void sha256Compute(uint32_t *valid_in, uint32_t nonce, int dif, unsigned long long int *counter, int threads)
@@ -61,7 +62,7 @@ void sha256Compute(uint32_t *valid_in, uint32_t nonce, int dif, unsigned long lo
 	curandState state;
 	curand_init(clock64(), idx, 0, &state);
 
-	while(1)
+	while(global_flag)
 	{	
 		w[1] = curand(&state);
 		w[2] = curand(&state);
@@ -228,7 +229,8 @@ void sha256Compute(uint32_t *valid_in, uint32_t nonce, int dif, unsigned long lo
 			valid_in[1] = w[1];
 			valid_in[2] = w[2];
 			valid_in[3] = w[3];
-			asm("trap;");
+			global_flag = false;
+			//asm("trap;");
 		}
 		else if ( (dif<=64) && (h[0]+A==0) && (h[1]+B>>(64-dif)==0) )
 		{
@@ -236,7 +238,8 @@ void sha256Compute(uint32_t *valid_in, uint32_t nonce, int dif, unsigned long lo
 			valid_in[1] = w[1];
 			valid_in[2] = w[2];
 			valid_in[3] = w[3];
-			asm("trap;");
+			global_flag = false;
+			//asm("trap;");
 		}
 		
 		idx_mod = idx+threads;
@@ -263,6 +266,7 @@ int main(int argc, char *argv[])
 
 	cudaMallocManaged(&input, 128);
 	cudaMallocManaged(&counter,64);
+
 
 	start = clock();
 

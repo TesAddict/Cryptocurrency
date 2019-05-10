@@ -107,18 +107,21 @@ void computeTarget(uint32_t nbits)
 	target[7] = inter[28]<<24 | inter[29]<<16 | inter[30]<<8 | inter[31];
 }
 
+__device__ bool global_flag;
+
 __global__
 void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uint32_t *h2,unsigned long long int *counter)
 {	
 	
 	uint32_t w[64];
 	uint32_t A,B,C,D,E,F,G,H,temp1,temp2,nonce,timestamp;
+	global_flag = true;
 
  
 	int idx = blockIdx.x*blockDim.x + threadIdx.x;
 	long int idx_mod = idx;
 
-	while(1)
+	while(global_flag)
 	{
 		if (computeH0 == false)
 		{
@@ -606,7 +609,7 @@ void sha256ComputeH2(uint32_t *block_header, uint32_t threads, uint32_t *h1, uin
 			atomicExch(&h2[7],h[7]+H);
 			
 			atomicExch(&block_header[19],nonce);
-			asm("trap;");
+			global_flag = false;
 		}	
 
 		
